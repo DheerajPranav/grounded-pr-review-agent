@@ -1,0 +1,9 @@
+{
+  "description": "A config file introducing an AWS key, a hardcoded password, and eval() on input, with no tests. A correct reviewer must catch all four.",
+  "expected": [
+    {"rule_id": "hardcoded-aws-key", "file_path": "config.py", "line_start": 1},
+    {"rule_id": "hardcoded-secret-assign", "file_path": "config.py", "line_start": 2},
+    {"rule_id": "dynamic-eval", "file_path": "config.py", "line_start": 4},
+    {"rule_id": "no-tests-for-change", "file_path": "config.py", "line_start": 1}
+  ]
+}

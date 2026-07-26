@@ -3,8 +3,8 @@
   "one_liner": "A selective, grounded, failure-aware PR review agent: a fan-out of specialist reasoners over a diff, grounded in retrieved code, with every action on one time-ordered spine.",
   "architecture_style": "modular monolith (ADR-002): one process, inward-only dependencies, observability cross-cutting",
   "source_docs": [
-    "AI_PR_Review_Agent_Project_Brief.pdf (cohort brief — execution checklist)",
-    "pr-review-agent.html (first-principles architecture study by Ayush Singh)"
+    "AI_PR_Review_Agent_Project_Brief.pdf (execution checklist — kept local)",
+    "pr-review-agent.html (first-principles architecture study — kept local)"
   ],
   "modules": {
     "core": { "purpose": "abstract interfaces (workflow_engine, llm) + shared exceptions", "depends_on": [] },

@@ -1,4 +1,4 @@
-# Failure matrix (the brief's per-component loop)
+# Failure matrix (per-component loop)
 
 For each component: purpose & contract → assumptions → failure modes → prevention/detection
 → recovery/safe degradation → test & observable evidence. Filled in as each milestone builds

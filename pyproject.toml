@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myers-pr-review-agent"
+version = "0.1.0"
+description = "A selective, grounded, failure-aware AI pull-request review agent."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Dheeraj Pranav" }]
+dependencies = [
+    "pydantic>=2.5",
+]
+
+[project.optional-dependencies]
+# LLM / production extras land in later milestones (kept out of the M1 baseline path)
+llm = ["openai>=1.0"]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+myers = "myers.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["myers*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

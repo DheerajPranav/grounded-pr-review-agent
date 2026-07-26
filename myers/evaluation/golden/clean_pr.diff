@@ -1,0 +1,10 @@
+diff --git a/tests/test_math.py b/tests/test_math.py
+index 3333333..4444444 100644
+--- a/tests/test_math.py
++++ b/tests/test_math.py
+@@ -1,3 +1,5 @@
+ import math
+
+ def test_sqrt():
++    assert math.sqrt(4) == 2
++    assert math.sqrt(9) == 3

@@ -1,0 +1,4 @@
+{
+  "description": "A clean test-only change that adds assertions. A correct reviewer must raise NOTHING — this case guards against false positives.",
+  "expected": []
+}

@@ -11,7 +11,7 @@ Loops prompt the agent, not the human. Each milestone runs the same cycle.
 - Implement the smallest slice that moves the active milestone's gate toward green.
 - Every new component records: purpose & contract → assumptions → failure modes →
   prevention/detection → recovery/degradation → test + observable evidence
-  (the brief's failure-mode loop; see `wiki/failure-matrix.md`).
+  (the failure-mode loop; see `wiki/failure-matrix.md`).
 - Keep the dependency rule: import inward only.
 
 ## L2 — SELF-CHECK (maker)

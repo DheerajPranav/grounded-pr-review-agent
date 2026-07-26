@@ -38,6 +38,10 @@ pytest
 M1 in progress. Production stack (Tiger Cloud spine, GitHub App, Next.js dashboard, Railway)
 lands in a later sprint — everything through M4 runs locally.
 
-## Design lineage
-Architecture study & brief by Ayush Singh (cohort project). This repository is the
-Genesis-managed implementation.
+## How it was built
+Built by **Dheeraj** using **Genesis** — a loop-based, AI-native development method.
+The system was designed from first principles, the architecture ingested into a durable
+`.genesis/` spine (definition-of-done gates, a context graph with invariants, a milestone
+plan with runnable demo commands, and a wiki of ADRs, schema, and failure matrices), then
+implemented milestone-by-milestone through BUILD → VERIFY loops on the agentic-swe-kit
+20-phase production lifecycle.

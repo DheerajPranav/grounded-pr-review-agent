@@ -1,6 +1,6 @@
 # PLAN — myers-pr-review-agent
 
-The improvement story the brief demands, sliced into milestones. Each milestone has a
+The improvement story the design demands, sliced into milestones. Each milestone has a
 **single outcome**, an **exact demo command** (its contract), a **freeze boundary**
 (what M(n) locks so M(n+1) can't churn it), and **assigned agentic-swe-master skills**.
 

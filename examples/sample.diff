@@ -1,0 +1,18 @@
+diff --git a/payments.py b/payments.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/payments.py
+@@ -0,0 +1,12 @@
++import stripe
++
++API_KEY = "sk-abc123def456ghi789jkl012mno"
++
++def charge(user, amount):
++    print("charging", user)
++    try:
++        return stripe.charge(amount)
++    except:
++        pass
++    # TODO: handle refunds
++    return None

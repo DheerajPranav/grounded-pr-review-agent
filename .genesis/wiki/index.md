@@ -1,9 +1,9 @@
 # Wiki — ingested architecture
 
 Genesis "ingest before you implement". This wiki is the durable knowledge distilled from
-the two source docs (git-ignored, kept local):
-- `AI_PR_Review_Agent_Project_Brief.pdf` — the cohort execution checklist.
-- `pr-review-agent.html` — the first-principles architecture study (Ayush Singh).
+the two source design docs (git-ignored, kept local):
+- `AI_PR_Review_Agent_Project_Brief.pdf` — the execution checklist.
+- `pr-review-agent.html` — the first-principles architecture study.
 
 ## Pages
 - [architecture.md](architecture.md) — the full system, boxes earned from first principles.
