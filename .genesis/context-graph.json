@@ -1,0 +1,44 @@
+{
+  "project": "myers-pr-review-agent",
+  "one_liner": "A selective, grounded, failure-aware PR review agent: a fan-out of specialist reasoners over a diff, grounded in retrieved code, with every action on one time-ordered spine.",
+  "architecture_style": "modular monolith (ADR-002): one process, inward-only dependencies, observability cross-cutting",
+  "source_docs": [
+    "AI_PR_Review_Agent_Project_Brief.pdf (cohort brief — execution checklist)",
+    "pr-review-agent.html (first-principles architecture study by Ayush Singh)"
+  ],
+  "modules": {
+    "core": { "purpose": "abstract interfaces (workflow_engine, llm) + shared exceptions", "depends_on": [] },
+    "models": { "purpose": "Finding/Review/enums/webhook Pydantic contracts", "depends_on": ["core"] },
+    "diffing": { "purpose": "parse unified diffs into files/hunks/changed-lines (Myers-diff aware)", "depends_on": ["models"] },
+    "agents": { "purpose": "baseline static reviewer + 4 LLM specialists + aggregator; all emit Findings", "depends_on": ["models", "core", "memory", "observability"] },
+    "memory": { "purpose": "code-chunk store + hybrid (semantic+exact) retrieval; Tiger/pgvector later, in-memory now", "depends_on": ["models", "core"] },
+    "observability": { "purpose": "emit_agent_event -> events spine; trace/audit/cost; cross-cutting", "depends_on": ["models"] },
+    "economics": { "purpose": "BudgetGuard + cost repository + model routing advisor", "depends_on": ["observability", "core"] },
+    "orchestrator": { "purpose": "graph/state/nodes fan-out; LangGraph impl behind core.workflow_engine (ADR-001)", "depends_on": ["agents", "core", "observability"] },
+    "hitl": { "purpose": "confidence gate, approval queue, escalation, feedback, dispute", "depends_on": ["models", "observability"] },
+    "evaluation": { "purpose": "golden PRs, baseline-vs-upgraded, LLM-as-judge, regression gate", "depends_on": ["models", "agents"] },
+    "security": { "purpose": "prompt-injection guard, HMAC verify, RBAC, secret masking", "depends_on": ["models"] },
+    "webhook_receiver": { "purpose": "HMAC validate, parse, idempotency, enqueue", "depends_on": ["security", "models"] },
+    "cli": { "purpose": "python -m myers review/eval — local demo entrypoint (no external services)", "depends_on": ["agents", "diffing", "evaluation"] }
+  },
+  "invariants": [
+    "DEPENDENCY RULE (ADR-002): core depends on nothing; every other module depends only inward. Any outer module can be deleted and inner ones still import. Enforced by tests/test_architecture.py.",
+    "ONE FINDING CONTRACT: every reviewer (baseline, single-LLM, or specialist) emits models.Finding and nothing else. The aggregator merges DATA, not prose.",
+    "NO LLM BEHIND A DETERMINISTIC DECISION: severity scoring, routing class, dedup, and the confidence gate are deterministic; only natural-language findings come from an LLM (agentic-swe-master Move 3).",
+    "GROUNDING: an upgraded finding without a code citation is invalid; retrieval provenance travels with the finding.",
+    "SWAP BEHIND A SEAM (ADR-001/003): orchestrator imports only core.workflow_engine; LLM only core.llm; memory backend swaps in-memory<->Tiger without touching callers.",
+    "DEGRADE SAFE: every outbound/agent step has a timeout; on failure the review completes with partial findings + a recorded degradation, never hangs and never posts a fabricated result.",
+    "EVENTS ARE APPEND-ONLY: every agent action is one immutable row on the spine; the whole review is reconstructable from it."
+  ],
+  "deferred_external_dependencies": {
+    "Tiger Cloud (TimescaleDB + pgvector/pgvectorscale)": "M3/M4 — in-memory retrieval + SQLite events until then",
+    "GitHub App (webhook + posting)": "M4 — CLI on a diff file until then",
+    "OpenAI / LLM provider": "M2 — FakeLLM (deterministic) for all tests; real key gated behind BudgetGuard"
+  },
+  "adrs": {
+    "ADR-001": "Orchestration = LangGraph now, behind core.workflow_engine; swap to Temporal at scale (1 file).",
+    "ADR-002": "Modular monolith, inward-only dependencies.",
+    "ADR-003": "One Tiger Cloud data spine (memory+truth+time); Redis stays as queue.",
+    "ADR-004": "Cost control: BudgetGuard reads running daily cost and hard-blocks before an LLM call."
+  }
+}

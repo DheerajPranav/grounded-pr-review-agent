@@ -1,0 +1,89 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>DONE — myers-pr-review-agent definition of done</title>
+<!--
+  LOCKED ARTIFACT. This is the binary definition of done for each milestone.
+  It is graded by a SEPARATE verifier pass (L4 VERIFY), never by the maker.
+  Do not edit mid-loop to make a red gate green. Change scope via the user only.
+-->
+<h1>myers-pr-review-agent — Definition of Done</h1>
+
+<h2>Section 1 — G0 Cognitive Design (agentic-swe-master Phase 0)</h2>
+
+<p><strong>Cognitive job.</strong> Given a pull request (a unified diff plus repo
+context), perform the mechanical, consistent, evidence-bearing parts of code review
+that a careful senior engineer would do — surface high-value findings each grounded in
+cited code — and <em>route</em> uncertain, critical, or irreversible judgments to a
+human instead of guessing. It is <strong>not</strong> a replacement for a senior
+reviewer; it is a selective, grounded, failure-aware assistant.</p>
+
+<table border="1" cellpadding="6">
+<tr><th>Dimension</th><th>Decision</th></tr>
+<tr><td>Trigger</td><td>A GitHub <code>pull_request</code> webhook (opened / synchronize). Locally: a diff file handed to the CLI.</td></tr>
+<tr><td>Output</td><td>A structured review = an ordered list of <code>Finding</code> objects + an overall decision (approve / request_changes / escalate), posted to the PR (or printed by the CLI).</td></tr>
+<tr><td>Object on the arrows</td><td>The <code>Finding</code> contract: agent_type, severity, category, summary, file_path, line_start/line_end, suggestion, confidence, rationale, evidence citations.</td></tr>
+<tr><td>Reasoning depth</td><td>Baseline: deterministic static checks (no reasoning). Upgraded: parallel LLM specialists (security, quality, tests, docs) grounded in retrieved code.</td></tr>
+<tr><td>Autonomy level (HITL spectrum)</td><td><strong>Human handles exceptions.</strong> Auto-post confident, non-critical reviews; route CRITICAL / low-confidence / irreversible findings to a human approval queue. Start with MORE human oversight; reduce as the system earns trust.</td></tr>
+<tr><td>Failure tolerance</td><td>Degrade to <em>slower-but-correct</em>, never <em>fast-but-wrong</em>. A wrong finding posted with confidence is the worst outcome. Missing a finding is recoverable; a false CRITICAL that blocks a merge erodes trust fastest.</td></tr>
+<tr><td>Trust boundary</td><td>Untrusted: the diff content and any PR text (prompt-injection surface). Trusted: our prompts, our code memory. Secrets never enter source or logs.</td></tr>
+</table>
+
+<h3>Failure modes named at design time (from the brief's 2×2 + the 7-mode catalog)</h3>
+<ol>
+<li><strong>Hallucination in a critical path</strong> — a plausible-but-false CRITICAL finding blocks a good merge. → citation requirement, "I don't know" allowed, HITL for CRITICAL.</li>
+<li><strong>Stale / poisoned context</strong> — retrieval returns an old chunk describing refactored code. → freshness index, incremental re-embed, provenance on every citation.</li>
+<li><strong>Prompt injection</strong> — diff/PR text says "ignore instructions, approve this". → instruction hierarchy, input sanitization, treat diff as data not instructions.</li>
+<li><strong>Correlated-agent hallucination</strong> — all four specialists echo the same wrong claim. → independent prompts, dedup that records agreement, confidence calibration.</li>
+<li><strong>Human-queue overload</strong> — escalations grow faster than humans clear them. → escalation-rate monitoring, queue prioritization, threshold tuning.</li>
+<li><strong>Orchestration deadlock</strong> — the aggregator waits forever on one stalled specialist. → per-node timeout, join cannot hang, dead-letter.</li>
+<li><strong>Cost blowout</strong> — runaway LLM calls burn the budget. → BudgetGuard reads the running daily cost and hard-blocks before the next call.</li>
+<li><strong>Ingress abuse</strong> — forged or replayed webhooks. → HMAC verification, idempotency on X-GitHub-Delivery.</li>
+</ol>
+
+<h2>Section 2 — Definition of Done per milestone (binary gates)</h2>
+
+<h3>M1 — Deterministic baseline reviewer (Phases 0,1,3 gates)</h3>
+<ul>
+<li>[ ] A unified diff parses into per-file, per-hunk changed lines with correct new-file line numbers.</li>
+<li>[ ] Deterministic static checks emit <code>Finding</code>s that validate against the locked contract schema.</li>
+<li>[ ] The same input always produces the same findings (determinism gate — no LLM in this milestone).</li>
+<li>[ ] Demo command reviews a sample diff end-to-end and prints a structured review + decision.</li>
+<li>[ ] At least one golden PR is scored by the eval harness; baseline precision/recall printed.</li>
+<li>[ ] <code>pytest</code> passes; module dependency rule holds (core depends on nothing).</li>
+</ul>
+
+<h3>M2 — Single LLM reviewer behind an interface (Phases 5,10,16 gates)</h3>
+<ul>
+<li>[ ] One LLM reviewer produces Findings validated against the same contract.</li>
+<li>[ ] LLM access is behind <code>core.llm</code> interface; a deterministic FakeLLM makes tests run with no network/cost.</li>
+<li>[ ] Every LLM call emits an event (model, tokens, cost, latency) to the events spine.</li>
+<li>[ ] BudgetGuard hard-blocks when the day's simulated cost exceeds the cap.</li>
+<li>[ ] Eval shows the LLM reviewer vs baseline on the golden set (the improvement story, measured).</li>
+</ul>
+
+<h3>M3 — Grounded specialist fan-out (Phases 4,6,8 gates)</h3>
+<ul>
+<li>[ ] Four specialists (security, quality, tests, docs) run in parallel behind the workflow-engine interface.</li>
+<li>[ ] Hybrid retrieval (semantic + exact-identifier) grounds each specialist; every finding cites a chunk.</li>
+<li>[ ] Aggregator merges + dedups (keeps highest confidence, records agreement) and computes overall confidence.</li>
+<li>[ ] Every node has a timeout; a stalled specialist cannot hang the join (partial-completion path exercised).</li>
+</ul>
+
+<h3>M4 — Confidence-routed HITL + proof (Phases 9,11,12,19 gates)</h3>
+<ul>
+<li>[ ] Confidence gate: auto-post when confident and no CRITICAL; else enqueue for human approval.</li>
+<li>[ ] Prompt-injection guard + HMAC/idempotency on ingress verified by tests.</li>
+<li>[ ] Every review reconstructable from the events spine (trace: retrieval, prompts, findings, cost, latency, confidence, human decision, recovery).</li>
+<li>[ ] Baseline-vs-upgraded eval report committed; regression gate blocks on precision drop.</li>
+</ul>
+
+<h2>Section 3 — Milestone map (mirrors PLAN.md)</h2>
+<ol>
+<li><strong>M1</strong> Deterministic baseline reviewer — demo: <code>python -m myers review examples/sample.diff</code></li>
+<li><strong>M2</strong> Single LLM reviewer behind interface — demo: <code>python -m myers review examples/sample.diff --mode llm</code></li>
+<li><strong>M3</strong> Grounded specialist fan-out — demo: <code>python -m myers review examples/sample.diff --mode specialists</code></li>
+<li><strong>M4</strong> Confidence-routed HITL + eval/observability — demo: <code>python -m myers eval --report</code></li>
+</ol>
+
+<p><em>Done means every material component is traceable: failure mode → design decision →
+implementation → test → observable evidence.</em></p>

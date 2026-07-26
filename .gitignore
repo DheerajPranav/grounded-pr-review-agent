@@ -1,0 +1,47 @@
+# --- Source design docs: keep local, never publish (per project setup) ---
+AI_PR_Review_Agent_Project_Brief.pdf
+pr-review-agent.html
+*.pdf
+
+# --- Secrets / environment ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- Node / frontend (later milestones) ---
+node_modules/
+.next/
+out/
+*.log
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# --- Local data / scratch ---
+*.sqlite
+*.db
+tmp/
+scratch/
