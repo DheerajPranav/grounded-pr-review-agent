@@ -1,7 +1,8 @@
 """Eval harness: run a set of agents over the golden PRs and score precision / recall / F1.
 
-A finding matches an expected label when (rule_id, file_path, line_start) are equal. This is
-the baseline-vs-upgraded comparison anchor and the regression gate input (M4).
+A finding matches an expected label when (category, file_path, line_start) are equal —
+mode-agnostic, so a regex baseline and an LLM are scored against the same ground truth. This
+is the baseline-vs-upgraded comparison anchor and the regression gate input (M4).
 """
 
 from __future__ import annotations
@@ -74,7 +75,7 @@ def evaluate(agents: list[Agent], mode: str, cases: list[GoldenCase] | None = No
     pipeline = ReviewPipeline(agents, mode, daily_cap_usd=daily_cap_usd)
     for case in cases:
         review = pipeline.review_text(case.diff_text, review_id=case.name)
-        found = {(f.rule_id, f.file_path, f.line_start) for f in review.findings}
+        found = {(f.category.value, f.file_path, f.line_start) for f in review.findings}
         tp = len(found & case.expected)
         fp = len(found - case.expected)
         fn = len(case.expected - found)

@@ -1,9 +1,11 @@
 """Golden PR loader.
 
-A golden case = a diff + the set of findings a correct reviewer should raise, each labeled
-by (rule_id, file_path, line_start). Cases live as pairs under evaluation/golden/:
+A golden case = a diff + the set of issues a correct reviewer should raise, each labeled
+by (category, file_path, line_start). Matching on category (not the mode-specific rule_id)
+lets a regex baseline and an LLM be scored on the SAME ground truth. Cases live as pairs
+under evaluation/golden/:
     <name>.diff            the pull-request diff
-    <name>.expected.json   {"expected": [{"rule_id","file_path","line_start"}, ...]}
+    <name>.expected.json   {"expected": [{"category","file_path","line_start", ...}, ...]}
 A clean case with an empty expected list guards against false positives.
 """
 
@@ -20,7 +22,7 @@ _GOLDEN_DIR = Path(__file__).parent / "golden"
 class GoldenCase:
     name: str
     diff_text: str
-    expected: frozenset[tuple[str, str, int]]  # (rule_id, file_path, line_start)
+    expected: frozenset[tuple[str, str, int]]  # (category, file_path, line_start)
 
 
 def load_golden_cases(directory: Path | None = None) -> list[GoldenCase]:
@@ -32,7 +34,7 @@ def load_golden_cases(directory: Path | None = None) -> list[GoldenCase]:
         if exp_path.exists():
             data = json.loads(exp_path.read_text(encoding="utf-8"))
             for e in data.get("expected", []):
-                expected.add((e["rule_id"], e["file_path"], int(e["line_start"])))
+                expected.add((e["category"], e["file_path"], int(e["line_start"])))
         cases.append(GoldenCase(
             name=diff_path.stem,
             diff_text=diff_path.read_text(encoding="utf-8"),

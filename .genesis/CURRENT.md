@@ -1,8 +1,14 @@
 # CURRENT — rolling state
 
-**Active milestone:** M2 COMPLETE (verified green, provider: Groq) → next M3
-**Loop phase:** M2 exited L4 VERIFY green; one item (live LLM-vs-baseline eval) needs the user's GROQ_API_KEY
+**Active milestone:** M2 COMPLETE (fully verified green, provider: Groq, live eval done) → next M3
+**Loop phase:** M2 exited L4 VERIFY green — all gate items met including the live measured eval
 **Last updated:** 2026-07-27
+
+## Live eval result (measured on Groq 2026-07-27)
+- baseline: precision=1.00 recall=1.00 (precise, shallow) · llm: precision=0.60 recall=0.75 (deep, chattier).
+- LLM catches a semantic issue the regex baseline cannot (missing arg to stripe.charge); costs ~$0.0005/review, ~1s.
+- Improvement story confirmed: baseline + LLM are complementary → M3 runs both, M4 routes uncertain LLM findings to a human.
+- Metric fix: eval now matches on (category, file, line), not the mode-specific rule_id (the first live run exposed this).
 
 ## What exists (M1 + M2 shipped)
 - Genesis spine + ingested architecture (`.genesis/`).
