@@ -14,6 +14,7 @@ import re
 from dataclasses import dataclass
 
 from myers.agents.base import Agent
+from myers.core.context import ReviewContext
 from myers.diffing.parser import ParsedDiff
 from myers.models import AgentType, Category, Evidence, Finding, Severity
 
@@ -42,9 +43,9 @@ _LINE_RULES: tuple[LineRule, ...] = (
              Category.SECURITY, Severity.CRITICAL, 0.97,
              "Hardcoded AWS access key id.",
              "Move the credential to a secret manager / env var and rotate it."),
-    LineRule("hardcoded-openai-key", re.compile(r"sk-[A-Za-z0-9]{20,}"),
+    LineRule("hardcoded-api-key", re.compile(r"\b(?:sk-|gsk_)[A-Za-z0-9]{20,}"),
              Category.SECURITY, Severity.CRITICAL, 0.95,
-             "Hardcoded API key (sk-...).",
+             "Hardcoded API key (sk-.../gsk_...).",
              "Load from an environment variable; rotate the exposed key."),
     LineRule("private-key-material", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
              Category.SECURITY, Severity.CRITICAL, 0.98,
@@ -112,7 +113,7 @@ _LINE_RULES: tuple[LineRule, ...] = (
 class BaselineAgent(Agent):
     name = "baseline"
 
-    def review(self, diff: ParsedDiff) -> list[Finding]:
+    def review(self, diff: ParsedDiff, ctx: ReviewContext | None = None) -> list[Finding]:
         findings: list[Finding] = []
         for path, added in diff.added_lines:
             text = added.content

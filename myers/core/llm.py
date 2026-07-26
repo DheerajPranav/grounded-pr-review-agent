@@ -1,8 +1,12 @@
 """Abstract LLM interface + a deterministic fake (the M2 seam).
 
-No module ever imports openai directly — only this interface. Tests and the M1 baseline
-never touch the network. M2 adds an OpenAI-backed implementation; the FakeLLM keeps the
-whole suite deterministic and free (failure mode: determinism-in-tests, cost blowout).
+No module ever imports a provider SDK directly — only this interface. Tests and the M1
+baseline never touch the network. M2 adds a Groq-backed implementation (tools/llm_client.py);
+the FakeLLM keeps the whole suite deterministic and free (failure modes: determinism-in-tests,
+cost blowout).
+
+Cost is computed by the concrete client (which knows the model's pricing) and carried on the
+response so the events spine and BudgetGuard can attribute spend per call (ADR-004).
 """
 
 from __future__ import annotations
@@ -17,32 +21,29 @@ class LLMResponse:
     model: str
     tokens_in: int
     tokens_out: int
-
-    @property
-    def cost_usd(self) -> float:
-        # Illustrative pricing; real numbers come from the model_router at M2.
-        return round((self.tokens_in * 0.000_003) + (self.tokens_out * 0.000_015), 6)
+    cost_usd: float = 0.0
 
 
 class LLMClient(ABC):
     @abstractmethod
-    def complete(self, *, system: str, user: str, model: str = "default") -> LLMResponse:
+    def complete(self, *, system: str, user: str, model: str | None = None) -> LLMResponse:
         """Return a completion. Implementations MUST allow the model to say 'I don't know'."""
 
 
 class FakeLLM(LLMClient):
-    """Deterministic stand-in: echoes a canned reply keyed off the prompt length.
+    """Deterministic stand-in used by every test and offline demo.
 
-    Used until M2 wires a real provider. Same input -> same output, always.
+    Returns a canned reply verbatim; same input -> same output, always, cost 0.
     """
 
-    def __init__(self, canned: str = "NO_FINDINGS") -> None:
+    def __init__(self, canned: str = "[]") -> None:
         self._canned = canned
 
-    def complete(self, *, system: str, user: str, model: str = "fake") -> LLMResponse:
+    def complete(self, *, system: str, user: str, model: str | None = None) -> LLMResponse:
         return LLMResponse(
             text=self._canned,
-            model=model,
+            model=model or "fake",
             tokens_in=len(system.split()) + len(user.split()),
             tokens_out=len(self._canned.split()),
+            cost_usd=0.0,
         )

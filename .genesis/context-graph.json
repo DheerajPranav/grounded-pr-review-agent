@@ -33,7 +33,7 @@
   "deferred_external_dependencies": {
     "Tiger Cloud (TimescaleDB + pgvector/pgvectorscale)": "M3/M4 — in-memory retrieval + SQLite events until then",
     "GitHub App (webhook + posting)": "M4 — CLI on a diff file until then",
-    "OpenAI / LLM provider": "M2 — FakeLLM (deterministic) for all tests; real key gated behind BudgetGuard"
+    "Groq LLM provider (OpenAI-compatible, free tier)": "M2 — FakeLLM (deterministic) for all tests; real GROQ_API_KEY gated behind BudgetGuard. Chat inference only; embeddings for M3 retrieval use a local model since Groq has no embeddings API."
   },
   "adrs": {
     "ADR-001": "Orchestration = LangGraph now, behind core.workflow_engine; swap to Temporal at scale (1 file).",

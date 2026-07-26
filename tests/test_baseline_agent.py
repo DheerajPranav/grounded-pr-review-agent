@@ -24,9 +24,9 @@ def _review(text):
 def test_finds_planted_issues():
     findings = _review(SAMPLE)
     by_rule = {f.rule_id: f for f in findings}
-    assert "hardcoded-openai-key" in by_rule
-    assert by_rule["hardcoded-openai-key"].severity is Severity.CRITICAL
-    assert by_rule["hardcoded-openai-key"].line_start == 1
+    assert "hardcoded-api-key" in by_rule
+    assert by_rule["hardcoded-api-key"].severity is Severity.CRITICAL
+    assert by_rule["hardcoded-api-key"].line_start == 1
     assert "debug-print" in by_rule and by_rule["debug-print"].line_start == 3
     assert "bare-except" in by_rule and by_rule["bare-except"].line_start == 6
     # a non-test file changed with no tests -> tests category finding

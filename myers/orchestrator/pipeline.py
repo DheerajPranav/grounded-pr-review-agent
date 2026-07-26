@@ -17,7 +17,9 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 
 from myers.agents.base import Agent
 from myers.aggregation import Aggregator
+from myers.core.context import ReviewContext
 from myers.diffing.parser import parse_unified_diff
+from myers.economics import BudgetGuard
 from myers.models import Finding, Review
 from myers.observability import EventLog
 
@@ -26,12 +28,17 @@ DEFAULT_AGENT_TIMEOUT_S = 30.0
 
 class ReviewPipeline:
     def __init__(self, agents: list[Agent], mode: str, *, events: EventLog | None = None,
-                 agent_timeout_s: float = DEFAULT_AGENT_TIMEOUT_S) -> None:
+                 agent_timeout_s: float = DEFAULT_AGENT_TIMEOUT_S,
+                 daily_cap_usd: float | None = None) -> None:
         self.agents = agents
         self.mode = mode
         self.events = events or EventLog()
         self.aggregator = Aggregator()
         self.agent_timeout_s = agent_timeout_s
+        # BudgetGuard reads the running cost off the same event spend (ADR-004).
+        self.budget = (
+            BudgetGuard(daily_cap_usd, self.events.total_cost) if daily_cap_usd is not None else None
+        )
 
     def review_text(self, diff_text: str, *, review_id: str | None = None) -> Review:
         review_id = review_id or str(uuid.uuid4())
@@ -48,8 +55,9 @@ class ReviewPipeline:
         for agent in self.agents:
             self.events.record(review_id, agent.name, "span.start")
             t0 = time.time()
+            ctx = self._context_for(review_id, agent.name)
             try:
-                findings = self._run_with_timeout(agent, diff)
+                findings = self._run_with_timeout(agent, diff, ctx)
                 agent_findings.append(findings)
                 self.events.record(review_id, agent.name, "span.end",
                                    latency_ms=int((time.time() - t0) * 1000),
@@ -73,6 +81,17 @@ class ReviewPipeline:
                            latency_ms=review.latency_ms)
         return review
 
-    def _run_with_timeout(self, agent: Agent, diff) -> list[Finding]:
+    def _context_for(self, review_id: str, agent_name: str) -> ReviewContext:
+        def emit(**kw) -> None:
+            self.events.record(review_id, kw.pop("agent", agent_name),
+                               kw.pop("event_type", "tool.call"), **kw)
+
+        return ReviewContext(
+            review_id=review_id,
+            emit=emit,
+            check_budget=(self.budget.check if self.budget is not None else ReviewContext.check_budget),
+        )
+
+    def _run_with_timeout(self, agent: Agent, diff, ctx: ReviewContext) -> list[Finding]:
         with ThreadPoolExecutor(max_workers=1) as ex:
-            return ex.submit(agent.review, diff).result(timeout=self.agent_timeout_s)
+            return ex.submit(agent.review, diff, ctx).result(timeout=self.agent_timeout_s)

@@ -72,5 +72,11 @@ per agent is the drift/calibration signal for continuous learning.
 SQLAlchemy for normal relational work; asyncpg for hot paths (event inserts, chunk upserts).
 
 ## Credentials (never in source — `.env` only)
+`GROQ_API_KEY` (LLM inference — free tier),
 `TIGER_DATABASE_URL=postgres://USER:PASSWORD@HOST:5432/DB?sslmode=require`,
-`OPENAI_API_KEY`, `GITHUB_APP_ID`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_PRIVATE_KEY_PATH`.
+`GITHUB_APP_ID`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_PRIVATE_KEY_PATH`.
+
+> **Provider note.** This implementation uses **Groq** (OpenAI-compatible, free tier) for
+> LLM inference. Groq offers chat inference only — no embeddings endpoint — so the M3
+> retrieval embeddings use a local embedding model, not a hosted one. The `VECTOR(256)`
+> dimension in the DDL above is adjusted to whatever the chosen local embedder produces.

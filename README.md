@@ -25,18 +25,37 @@ Built with **Genesis** (loop-based, AI-native development) on the **agentic-swe-
 See [`.genesis/PLAN.md`](.genesis/PLAN.md) for the sprint plan and demo commands, and
 [`.genesis/wiki/`](.genesis/wiki/) for the ingested architecture, ADRs, and failure matrices.
 
-## Quick start (local, zero paid services)
+## Quick start
+
+### Baseline reviewer (zero setup, no API key)
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
-python -m myers review examples/sample.diff     # M1 baseline review
-python -m myers eval                             # score the golden PRs
-pytest
+pip install -e ".[dev]"
+python -m myers review examples/sample.diff     # M1 deterministic baseline review
+python -m myers eval                             # score the golden PRs (precision/recall)
+pytest                                           # full test suite
 ```
 
+### LLM reviewer (M2 — uses Groq, free tier)
+The LLM reviewer runs on **[Groq](https://console.groq.com)** (OpenAI-compatible, free API key).
+```bash
+pip install -e ".[llm]"                          # installs the groq client
+cp .env.example .env                             # then paste your key into .env
+export GROQ_API_KEY=...                          # or `source .env`
+python -m myers review examples/sample.diff --mode llm --cap 0.50
+```
+`--cap` sets a daily budget; the LLM is hard-blocked once spend reaches it (BudgetGuard, ADR-004).
+Every LLM call is recorded to the events spine with its model, tokens, and cost. Tests never call
+Groq — they use a deterministic `FakeLLM`, so the suite stays free and offline.
+
 ## Status
-M1 in progress. Production stack (Tiger Cloud spine, GitHub App, Next.js dashboard, Railway)
-lands in a later sprint — everything through M4 runs locally.
+- **M1 — deterministic baseline reviewer:** ✅ done.
+- **M2 — single LLM reviewer (Groq) behind a swappable interface, with cost events + BudgetGuard:** ✅ done.
+- **M3 — grounded specialist fan-out:** next.
+- **M4 — confidence-routed HITL + eval report:** planned.
+
+Production stack (Tiger Cloud spine, GitHub App, Next.js dashboard, Railway) lands in a later
+sprint — everything through M4 runs locally. See [`.genesis/CURRENT.md`](.genesis/CURRENT.md) for live status.
 
 ## How it was built
 Built by **Dheeraj** using **Genesis** — a loop-based, AI-native development method.

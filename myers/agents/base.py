@@ -4,19 +4,22 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from myers.core.context import ReviewContext
 from myers.diffing.parser import ParsedDiff
 from myers.models import Finding
 
 
 class Agent(ABC):
-    """A reviewer. Contract: consume a parsed diff (+ optional grounding), emit Findings.
+    """A reviewer. Contract: consume a parsed diff (+ optional context), emit Findings.
 
     Shared shape for the baseline and, later, the four LLM specialists — so the aggregator
     and orchestrator treat them uniformly (the Finding contract is the only interface).
+    The ``ctx`` carries per-review capabilities (event emit, budget check, retrieval); agents
+    that need none of them (the baseline) simply ignore it.
     """
 
     name: str = "agent"
 
     @abstractmethod
-    def review(self, diff: ParsedDiff) -> list[Finding]:
+    def review(self, diff: ParsedDiff, ctx: ReviewContext | None = None) -> list[Finding]:
         ...

@@ -11,7 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from myers.agents import BaselineAgent
+from myers.agents import BaselineAgent, LLMReviewAgent
 from myers.evaluation import evaluate
 from myers.models import Decision
 from myers.orchestrator import ReviewPipeline
@@ -20,11 +20,18 @@ from myers.orchestrator import ReviewPipeline
 def _agents_for_mode(mode: str):
     if mode == "baseline":
         return [BaselineAgent()], "baseline"
-    if mode in ("llm", "specialists"):
-        # M2/M3: real LLM reviewer / four grounded specialists behind core.llm + workflow_engine.
+    if mode == "llm":
+        # One LLM reviewer, backed by Groq (free tier). FakeLLM is used only in tests.
+        from myers.tools import GroqLLMClient
+        try:
+            client = GroqLLMClient()
+        except RuntimeError as exc:
+            raise SystemExit(str(exc))
+        return [LLMReviewAgent(client)], "llm"
+    if mode == "specialists":
         raise SystemExit(
-            f"mode '{mode}' arrives in a later milestone (see .genesis/PLAN.md). "
-            f"'baseline' is implemented and runs today."
+            "mode 'specialists' (grounded 4-agent fan-out) arrives at M3 (see .genesis/PLAN.md). "
+            "'baseline' and 'llm' run today."
         )
     raise SystemExit(f"unknown mode: {mode}")
 
@@ -35,7 +42,7 @@ def cmd_review(args) -> int:
         print(f"error: no such diff file: {diff_path}", file=sys.stderr)
         return 2
     agents, mode = _agents_for_mode(args.mode)
-    pipeline = ReviewPipeline(agents, mode)
+    pipeline = ReviewPipeline(agents, mode, daily_cap_usd=args.cap)
     review = pipeline.review_text(diff_path.read_text(encoding="utf-8"))
     print(review.render())
     if args.emit_events:
@@ -47,7 +54,7 @@ def cmd_review(args) -> int:
 
 def cmd_eval(args) -> int:
     agents, mode = _agents_for_mode(args.mode)
-    report = evaluate(agents, mode)
+    report = evaluate(agents, mode, daily_cap_usd=args.cap)
     print(report.render())
     if args.min_precision is not None and report.precision < args.min_precision:
         print(f"\nREGRESSION GATE FAILED: precision {report.precision:.2f} "
@@ -68,11 +75,14 @@ def build_parser() -> argparse.ArgumentParser:
     r = sub.add_parser("review", help="review a unified diff file")
     r.add_argument("diff")
     r.add_argument("--mode", default="baseline", choices=["baseline", "llm", "specialists"])
+    r.add_argument("--cap", type=float, default=None, metavar="USD",
+                   help="daily budget cap; the LLM is hard-blocked once spend reaches it (ADR-004)")
     r.add_argument("--emit-events", metavar="PATH", help="flush the event spine to a JSONL file")
     r.set_defaults(func=cmd_review)
 
     e = sub.add_parser("eval", help="score the golden PRs")
     e.add_argument("--mode", default="baseline", choices=["baseline", "llm", "specialists"])
+    e.add_argument("--cap", type=float, default=None, metavar="USD", help="daily budget cap for LLM modes")
     e.add_argument("--report", action="store_true", help="(reserved) write a persisted report")
     e.add_argument("--min-precision", type=float, default=None, help="regression gate threshold")
     e.set_defaults(func=cmd_eval)

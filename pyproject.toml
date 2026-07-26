@@ -14,8 +14,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# LLM / production extras land in later milestones (kept out of the M1 baseline path)
-llm = ["openai>=1.0"]
+# LLM extra: Groq (OpenAI-compatible, free tier). Kept out of the baseline/test path.
+llm = ["groq>=0.11"]
 dev = ["pytest>=7.4"]
 
 [project.scripts]

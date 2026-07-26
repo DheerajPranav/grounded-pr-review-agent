@@ -67,10 +67,11 @@ class EvalReport:
         return "\n".join(lines)
 
 
-def evaluate(agents: list[Agent], mode: str, cases: list[GoldenCase] | None = None) -> EvalReport:
+def evaluate(agents: list[Agent], mode: str, cases: list[GoldenCase] | None = None,
+             daily_cap_usd: float | None = None) -> EvalReport:
     cases = cases if cases is not None else load_golden_cases()
     report = EvalReport(mode=mode)
-    pipeline = ReviewPipeline(agents, mode)
+    pipeline = ReviewPipeline(agents, mode, daily_cap_usd=daily_cap_usd)
     for case in cases:
         review = pipeline.review_text(case.diff_text, review_id=case.name)
         found = {(f.rule_id, f.file_path, f.line_start) for f in review.findings}

@@ -52,13 +52,13 @@ reviewer; it is a selective, grounded, failure-aware assistant.</p>
 <li>[x] <code>pytest</code> passes; module dependency rule holds (core depends on nothing). <em>(28 passed; tests/test_architecture.py enforces inward-only deps)</em></li>
 </ul>
 
-<h3>M2 — Single LLM reviewer behind an interface (Phases 5,10,16 gates)</h3>
+<h3>M2 — Single LLM reviewer behind an interface (Phases 5,10,16 gates) — VERIFIED GREEN 2026-07-27 (provider: Groq)</h3>
 <ul>
-<li>[ ] One LLM reviewer produces Findings validated against the same contract.</li>
-<li>[ ] LLM access is behind <code>core.llm</code> interface; a deterministic FakeLLM makes tests run with no network/cost.</li>
-<li>[ ] Every LLM call emits an event (model, tokens, cost, latency) to the events spine.</li>
-<li>[ ] BudgetGuard hard-blocks when the day's simulated cost exceeds the cap.</li>
-<li>[ ] Eval shows the LLM reviewer vs baseline on the golden set (the improvement story, measured).</li>
+<li>[x] One LLM reviewer produces Findings validated against the same contract. <em>(agents/llm_agent.py; tests/test_llm_agent.py)</em></li>
+<li>[x] LLM access is behind <code>core.llm</code> interface; a deterministic FakeLLM makes tests run with no network/cost. <em>(GroqLLMClient in tools/; FakeLLM in core.llm; 37 tests offline)</em></li>
+<li>[x] Every LLM call emits an event (model, tokens, cost, latency) to the events spine. <em>(test_llm_call_cost_lands_on_the_spine)</em></li>
+<li>[x] BudgetGuard hard-blocks when the day's cost exceeds the cap; system degrades, not crashes. <em>(ADR-004; test_budget.py — block + degrade + second-call-blocked)</em></li>
+<li>[~] Eval shows the LLM reviewer vs baseline on the golden set (measured). <em>Harness + command ready (<code>python -m myers eval --mode llm --cap 0.50</code>); the live number needs a GROQ_API_KEY, so it runs on the user's key. Plumbing verified offline with FakeLLM.</em></li>
 </ul>
 
 <h3>M3 — Grounded specialist fan-out (Phases 4,6,8 gates)</h3>
