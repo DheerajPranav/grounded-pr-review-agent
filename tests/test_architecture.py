@@ -21,10 +21,14 @@ _RANK = {
     "aggregation": 3,
     "economics": 3,
     "hitl": 3,
+    "integrations": 3,
+    "webhook_receiver": 3,
     "orchestrator": 4,
     "evaluation": 4,
     "cli": 5,
     "__main__": 5,
+    "job_queue": 5,
+    "api": 6,
 }
 
 

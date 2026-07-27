@@ -89,6 +89,16 @@ def cmd_eval(args) -> int:
     return 0
 
 
+def cmd_serve(args) -> int:
+    try:
+        import uvicorn
+    except ModuleNotFoundError:
+        raise SystemExit("the server needs the 'server' extra: pip install -e \".[server]\"")
+    print(f"myers ingress on http://{args.host}:{args.port}  (POST /webhook/github, GET /healthz)")
+    uvicorn.run("myers.api.app:app", host=args.host, port=args.port, reload=args.reload)
+    return 0
+
+
 def cmd_trace(args) -> int:
     from myers.observability.trace import load_events, render_trace
     if not args.events:
@@ -126,6 +136,12 @@ def build_parser() -> argparse.ArgumentParser:
     t.add_argument("review_id")
     t.add_argument("--events", metavar="PATH", help="JSONL events file (from review --emit-events)")
     t.set_defaults(func=cmd_trace)
+
+    s = sub.add_parser("serve", help="run the FastAPI webhook ingress")
+    s.add_argument("--host", default="0.0.0.0")
+    s.add_argument("--port", type=int, default=8000)
+    s.add_argument("--reload", action="store_true")
+    s.set_defaults(func=cmd_serve)
     return p
 
 
