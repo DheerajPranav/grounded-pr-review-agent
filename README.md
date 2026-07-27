@@ -1,4 +1,4 @@
-# myers-pr-review-agent
+# grounded-pr-review-agent
 
 A **selective, grounded, failure-aware** AI pull-request reviewer.
 
@@ -31,8 +31,8 @@ See [`.genesis/PLAN.md`](.genesis/PLAN.md) for the sprint plan and demo commands
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-python -m myers review examples/sample.diff     # M1 deterministic baseline review
-python -m myers eval                             # score the golden PRs (precision/recall)
+python -m grounded review examples/sample.diff     # M1 deterministic baseline review
+python -m grounded eval                             # score the golden PRs (precision/recall)
 pytest                                           # full test suite
 ```
 
@@ -42,7 +42,7 @@ The LLM reviewer runs on **[Groq](https://console.groq.com)** (OpenAI-compatible
 pip install -e ".[llm]"                          # installs the groq client
 cp .env.example .env                             # then paste your key into .env
 export GROQ_API_KEY=...                          # or `source .env`
-python -m myers review examples/sample.diff --mode llm --cap 0.50
+python -m grounded review examples/sample.diff --mode llm --cap 0.50
 ```
 `--cap` sets a daily budget; the LLM is hard-blocked once spend reaches it (BudgetGuard, ADR-004).
 Every LLM call is recorded to the events spine with its model, tokens, and cost. Tests never call
@@ -52,8 +52,8 @@ Groq — they use a deterministic `FakeLLM`, so the suite stays free and offline
 Four specialists — **security / quality / tests / docs** — run in **parallel**, each grounded by
 hybrid retrieval (dense + exact-identifier) over a code memory, merged by the aggregator.
 ```bash
-python -m myers review examples/sample.diff --mode specialists --cap 0.50
-python -m myers review path/to.diff --mode specialists --repo /path/to/checkout   # ground on a real repo
+python -m grounded review examples/sample.diff --mode specialists --cap 0.50
+python -m grounded review path/to.diff --mode specialists --repo /path/to/checkout   # ground on a real repo
 ```
 Since Groq has no embeddings API, retrieval uses a local, deterministic embedder (no extra key,
 no model download) behind a swappable `Embedder` interface — a neural embedder or Tiger pgvector
@@ -64,9 +64,9 @@ Confident, non-critical reviews auto-post; CRITICAL / low-confidence / prompt-in
 are **routed to a human approval queue**. Every action is on an append-only events spine, so any
 review is fully reconstructable:
 ```bash
-python -m myers review path/to.diff --mode specialists --emit-events events.jsonl
-python -m myers trace <review_id> --events events.jsonl        # replay the whole review
-python -m myers eval --mode baseline --min-precision 0.9       # regression gate (CI)
+python -m grounded review path/to.diff --mode specialists --emit-events events.jsonl
+python -m grounded trace <review_id> --events events.jsonl        # replay the whole review
+python -m grounded eval --mode baseline --min-precision 0.9       # regression gate (CI)
 ```
 See [`reports/eval_baseline_vs_upgraded.md`](reports/eval_baseline_vs_upgraded.md) for the measured
 baseline-vs-upgraded comparison.

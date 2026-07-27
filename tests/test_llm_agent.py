@@ -1,9 +1,9 @@
 import json
 
-from myers.agents import LLMReviewAgent
-from myers.core.llm import FakeLLM
-from myers.diffing import parse_unified_diff
-from myers.models import Category, Severity
+from grounded.agents import LLMReviewAgent
+from grounded.core.llm import FakeLLM
+from grounded.diffing import parse_unified_diff
+from grounded.models import Category, Severity
 
 DIFF = (
     "diff --git a/app.py b/app.py\n"

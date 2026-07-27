@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "myers-pr-review-agent"
+name = "grounded-pr-review-agent"
 version = "0.1.0"
 description = "A selective, grounded, failure-aware AI pull-request review agent."
 readme = "README.md"
@@ -25,10 +25,10 @@ queue = ["arq>=0.25", "redis>=5.0"]
 dev = ["pytest>=7.4", "fastapi>=0.110", "httpx>=0.27"]
 
 [project.scripts]
-myers = "myers.cli:main"
+grounded = "grounded.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["myers*"]
+include = ["grounded*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

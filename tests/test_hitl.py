@@ -1,8 +1,8 @@
 import pytest
 
-from myers.hitl import ApprovalQueue, HumanDecision, TicketStatus
-from myers.models import Decision, Review
-from myers.observability import EventLog
+from grounded.hitl import ApprovalQueue, HumanDecision, TicketStatus
+from grounded.models import Decision, Review
+from grounded.observability import EventLog
 
 
 def _review(escalated: bool) -> Review:

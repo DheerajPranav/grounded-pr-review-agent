@@ -1,8 +1,8 @@
 """Injection -> forced escalation (offline, baseline agent), and event-spine trace reconstruction."""
 
-from myers.agents import BaselineAgent
-from myers.observability.trace import load_events, render_trace
-from myers.orchestrator import ReviewPipeline
+from grounded.agents import BaselineAgent
+from grounded.observability.trace import load_events, render_trace
+from grounded.orchestrator import ReviewPipeline
 
 CLEAN = (
     "diff --git a/a.py b/a.py\nnew file mode 100644\n--- /dev/null\n+++ b/a.py\n"

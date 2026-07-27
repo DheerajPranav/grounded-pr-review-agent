@@ -1,5 +1,5 @@
-from myers.memory import HashingEmbedder, InMemoryCodeStore
-from myers.memory.embedder import cosine, tokenize
+from grounded.memory import HashingEmbedder, InMemoryCodeStore
+from grounded.memory.embedder import cosine, tokenize
 
 
 def test_embedder_is_deterministic_and_normalized():
@@ -36,7 +36,7 @@ def test_empty_store_returns_nothing():
 
 
 def test_ingest_diff_context_indexes_added_lines():
-    from myers.diffing import parse_unified_diff
+    from grounded.diffing import parse_unified_diff
     diff = ("diff --git a/x.py b/x.py\nnew file mode 100644\n--- /dev/null\n+++ b/x.py\n"
             "@@ -0,0 +1,2 @@\n+def charge():\n+    pass\n")
     store = InMemoryCodeStore()

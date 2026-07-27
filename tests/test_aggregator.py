@@ -1,5 +1,5 @@
-from myers.aggregation import Aggregator
-from myers.models import AgentType, Category, Decision, Evidence, Finding, Severity
+from grounded.aggregation import Aggregator
+from grounded.models import AgentType, Category, Decision, Evidence, Finding, Severity
 
 
 def _f(agent, rule="r", sev=Severity.HIGH, conf=0.8, line=5):

@@ -1,13 +1,13 @@
 # Baseline vs. upgraded — evaluation report
 
-The improvement story, measured on the golden PR set (`myers/evaluation/golden/`). Matching is
+The improvement story, measured on the golden PR set (`grounded/evaluation/golden/`). Matching is
 on `(category, file, line)` so a regex baseline, a single LLM, and the specialist fan-out are
 all scored against the same ground truth. Regenerate any row with:
 
 ```bash
-python -m myers eval --mode baseline                       # offline, reproducible
-python -m myers eval --mode llm         --cap 0.50         # Groq (needs GROQ_API_KEY)
-python -m myers eval --mode specialists --cap 0.50         # Groq
+python -m grounded eval --mode baseline                       # offline, reproducible
+python -m grounded eval --mode llm         --cap 0.50         # Groq (needs GROQ_API_KEY)
+python -m grounded eval --mode specialists --cap 0.50         # Groq
 ```
 
 ## Results (golden set: `security_pr`, `clean_pr`)
@@ -38,5 +38,5 @@ review ≈ $0.0005 (llm) / $0.0020 (specialists); latency ≈ 1s.)*
 
 ## Regression gate
 
-`python -m myers eval --mode baseline --min-precision 0.9` exits non-zero if baseline precision
+`python -m grounded eval --mode baseline --min-precision 0.9` exits non-zero if baseline precision
 regresses below 0.9 — wired for CI so a change that breaks the deterministic floor blocks.

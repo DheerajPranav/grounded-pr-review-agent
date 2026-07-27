@@ -1,6 +1,6 @@
-from myers.agents import BaselineAgent
-from myers.diffing import parse_unified_diff
-from myers.models import Category, Severity
+from grounded.agents import BaselineAgent
+from grounded.diffing import parse_unified_diff
+from grounded.models import Category, Severity
 
 SAMPLE = (
     "diff --git a/payments.py b/payments.py\n"

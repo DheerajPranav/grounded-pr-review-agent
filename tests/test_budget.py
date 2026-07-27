@@ -4,11 +4,11 @@ import json
 
 import pytest
 
-from myers.agents import LLMReviewAgent
-from myers.core.exceptions import BudgetExceededError
-from myers.core.llm import FakeLLM, LLMClient, LLMResponse
-from myers.economics import BudgetGuard
-from myers.orchestrator import ReviewPipeline
+from grounded.agents import LLMReviewAgent
+from grounded.core.exceptions import BudgetExceededError
+from grounded.core.llm import FakeLLM, LLMClient, LLMResponse
+from grounded.economics import BudgetGuard
+from grounded.orchestrator import ReviewPipeline
 
 DIFF = (
     "diff --git a/a.py b/a.py\nnew file mode 100644\n--- /dev/null\n+++ b/a.py\n"

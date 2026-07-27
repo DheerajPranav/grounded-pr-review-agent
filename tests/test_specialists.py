@@ -3,13 +3,13 @@
 import json
 import time
 
-from myers.agents import LLMReviewAgent, build_specialists
-from myers.agents.base import Agent
-from myers.core.llm import FakeLLM
-from myers.diffing import parse_unified_diff
-from myers.memory import InMemoryCodeStore
-from myers.models import AgentType, Category, Decision
-from myers.orchestrator import ReviewPipeline
+from grounded.agents import LLMReviewAgent, build_specialists
+from grounded.agents.base import Agent
+from grounded.core.llm import FakeLLM
+from grounded.diffing import parse_unified_diff
+from grounded.memory import InMemoryCodeStore
+from grounded.models import AgentType, Category, Decision
+from grounded.orchestrator import ReviewPipeline
 
 DIFF = (
     "diff --git a/app.py b/app.py\nnew file mode 100644\n--- /dev/null\n+++ b/app.py\n"

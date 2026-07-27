@@ -1,12 +1,12 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>DONE — myers-pr-review-agent definition of done</title>
+<title>DONE — grounded-pr-review-agent definition of done</title>
 <!--
   LOCKED ARTIFACT. This is the binary definition of done for each milestone.
   It is graded by a SEPARATE verifier pass (L4 VERIFY), never by the maker.
   Do not edit mid-loop to make a red gate green. Change scope via the user only.
 -->
-<h1>myers-pr-review-agent — Definition of Done</h1>
+<h1>grounded-pr-review-agent — Definition of Done</h1>
 
 <h2>Section 1 — G0 Cognitive Design (agentic-swe-master Phase 0)</h2>
 
@@ -47,7 +47,7 @@ reviewer; it is a selective, grounded, failure-aware assistant.</p>
 <li>[x] A unified diff parses into per-file, per-hunk changed lines with correct new-file line numbers. <em>(tests/test_diffing.py — 6 cases incl. rename/new/delete/binary/malformed/multi-hunk)</em></li>
 <li>[x] Deterministic static checks emit <code>Finding</code>s that validate against the locked contract schema. <em>(pydantic-validated; tests/test_baseline_agent.py)</em></li>
 <li>[x] The same input always produces the same findings (determinism gate — no LLM in this milestone). <em>(test_deterministic)</em></li>
-<li>[x] Demo command reviews a sample diff end-to-end and prints a structured review + decision. <em>(python -m myers review examples/sample.diff → 7 findings, CRITICAL escalated)</em></li>
+<li>[x] Demo command reviews a sample diff end-to-end and prints a structured review + decision. <em>(python -m grounded review examples/sample.diff → 7 findings, CRITICAL escalated)</em></li>
 <li>[x] At least one golden PR is scored by the eval harness; baseline precision/recall printed. <em>(2 golden PRs; precision=1.00 recall=1.00 f1=1.00)</em></li>
 <li>[x] <code>pytest</code> passes; module dependency rule holds (core depends on nothing). <em>(28 passed; tests/test_architecture.py enforces inward-only deps)</em></li>
 </ul>
@@ -74,16 +74,16 @@ reviewer; it is a selective, grounded, failure-aware assistant.</p>
 <ul>
 <li>[x] Confidence gate: auto-post when confident and no CRITICAL; else enqueue for human approval. <em>(hitl/ApprovalQueue: submit/decide/dispute/feedback; wired in CLI review; test_hitl.py; live demo queued the CRITICAL secret)</em></li>
 <li>[x] Prompt-injection guard + HMAC/idempotency verified by tests. <em>(security/: scan_injection forces escalation — test_injection_and_trace; verify_signature constant-time + IdempotencyStore — test_security.py)</em></li>
-<li>[x] Every review reconstructable from the events spine (spans, decision, escalation, cost, latency, confidence, human decision, recovery). <em>(observability/trace.py + `myers trace &lt;id&gt; --events`; live trace shown end to end)</em></li>
+<li>[x] Every review reconstructable from the events spine (spans, decision, escalation, cost, latency, confidence, human decision, recovery). <em>(observability/trace.py + `grounded trace &lt;id&gt; --events`; live trace shown end to end)</em></li>
 <li>[x] Baseline-vs-upgraded eval report committed; regression gate blocks on precision drop. <em>(reports/eval_baseline_vs_upgraded.md + JSON; `--min-precision` gate. Measured: baseline P=1.00 R=1.00; llm P=0.60 R=0.75; specialists P=0.22 R=1.00 — recall rises, precision trades off, which the HITL gate + human triage resolve)</em></li>
 </ul>
 
 <h2>Section 3 — Milestone map (mirrors PLAN.md)</h2>
 <ol>
-<li><strong>M1</strong> Deterministic baseline reviewer — demo: <code>python -m myers review examples/sample.diff</code></li>
-<li><strong>M2</strong> Single LLM reviewer behind interface — demo: <code>python -m myers review examples/sample.diff --mode llm</code></li>
-<li><strong>M3</strong> Grounded specialist fan-out — demo: <code>python -m myers review examples/sample.diff --mode specialists</code></li>
-<li><strong>M4</strong> Confidence-routed HITL + eval/observability — demo: <code>python -m myers eval --report</code></li>
+<li><strong>M1</strong> Deterministic baseline reviewer — demo: <code>python -m grounded review examples/sample.diff</code></li>
+<li><strong>M2</strong> Single LLM reviewer behind interface — demo: <code>python -m grounded review examples/sample.diff --mode llm</code></li>
+<li><strong>M3</strong> Grounded specialist fan-out — demo: <code>python -m grounded review examples/sample.diff --mode specialists</code></li>
+<li><strong>M4</strong> Confidence-routed HITL + eval/observability — demo: <code>python -m grounded eval --report</code></li>
 </ol>
 
 <p><em>Done means every material component is traceable: failure mode → design decision →

@@ -1,7 +1,7 @@
 """The baseline must fully score its own golden set: this is the regression anchor."""
 
-from myers.agents import BaselineAgent
-from myers.evaluation import evaluate, load_golden_cases
+from grounded.agents import BaselineAgent
+from grounded.evaluation import evaluate, load_golden_cases
 
 
 def test_golden_cases_load():

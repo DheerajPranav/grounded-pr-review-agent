@@ -2,9 +2,9 @@
 
 import time
 
-from myers.agents import BaselineAgent
-from myers.agents.base import Agent
-from myers.orchestrator import ReviewPipeline
+from grounded.agents import BaselineAgent
+from grounded.agents.base import Agent
+from grounded.orchestrator import ReviewPipeline
 
 DIFF = (
     "diff --git a/a.py b/a.py\nnew file mode 100644\n--- /dev/null\n+++ b/a.py\n"

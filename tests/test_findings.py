@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from myers.models import AgentType, Category, Evidence, Finding, Severity
+from grounded.models import AgentType, Category, Evidence, Finding, Severity
 
 
 def _finding(**kw):

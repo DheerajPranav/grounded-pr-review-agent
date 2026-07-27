@@ -1,5 +1,5 @@
 {
-  "project": "myers-pr-review-agent",
+  "project": "grounded-pr-review-agent",
   "one_liner": "A selective, grounded, failure-aware PR review agent: a fan-out of specialist reasoners over a diff, grounded in retrieved code, with every action on one time-ordered spine.",
   "architecture_style": "modular monolith (ADR-002): one process, inward-only dependencies, observability cross-cutting",
   "source_docs": [
@@ -9,7 +9,7 @@
   "modules": {
     "core": { "purpose": "abstract interfaces (workflow_engine, llm) + shared exceptions", "depends_on": [] },
     "models": { "purpose": "Finding/Review/enums/webhook Pydantic contracts", "depends_on": ["core"] },
-    "diffing": { "purpose": "parse unified diffs into files/hunks/changed-lines (Myers-diff aware)", "depends_on": ["models"] },
+    "diffing": { "purpose": "parse unified diffs into files/hunks/changed-lines (unified-diff aware)", "depends_on": ["models"] },
     "agents": { "purpose": "baseline static reviewer + 4 LLM specialists + aggregator; all emit Findings", "depends_on": ["models", "core", "memory", "observability"] },
     "memory": { "purpose": "code-chunk store + hybrid (semantic+exact) retrieval; Tiger/pgvector later, in-memory now", "depends_on": ["models", "core"] },
     "observability": { "purpose": "emit_agent_event -> events spine; trace/audit/cost; cross-cutting", "depends_on": ["models"] },
@@ -19,7 +19,7 @@
     "evaluation": { "purpose": "golden PRs, baseline-vs-upgraded, LLM-as-judge, regression gate", "depends_on": ["models", "agents"] },
     "security": { "purpose": "prompt-injection guard, HMAC verify, RBAC, secret masking", "depends_on": ["models"] },
     "webhook_receiver": { "purpose": "HMAC validate, parse, idempotency, enqueue", "depends_on": ["security", "models"] },
-    "cli": { "purpose": "python -m myers review/eval — local demo entrypoint (no external services)", "depends_on": ["agents", "diffing", "evaluation"] }
+    "cli": { "purpose": "python -m grounded review/eval — local demo entrypoint (no external services)", "depends_on": ["agents", "diffing", "evaluation"] }
   },
   "invariants": [
     "DEPENDENCY RULE (ADR-002): core depends on nothing; every other module depends only inward. Any outer module can be deleted and inner ones still import. Enforced by tests/test_architecture.py.",

@@ -12,7 +12,7 @@
 - M4: confidence-routed HITL:
   - `hitl/ApprovalQueue`: auto-post vs enqueue; decide (approve/reject); dispute; feedback — all on the spine.
   - `security/`: prompt-injection guard (forces escalation), HMAC verify (constant-time), idempotency store.
-  - `observability/trace.py` + `myers trace <id> --events`: full review reconstruction from the spine.
+  - `observability/trace.py` + `grounded trace <id> --events`: full review reconstruction from the spine.
   - `reports/eval_baseline_vs_upgraded.md` + JSON; `--min-precision` regression gate.
 - **62 tests pass, all offline** (FakeLLM). CLI: review (baseline|llm|specialists), eval (+--report, --min-precision), trace.
 

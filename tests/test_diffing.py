@@ -1,4 +1,4 @@
-from myers.diffing import parse_unified_diff
+from grounded.diffing import parse_unified_diff
 
 
 def test_new_file_line_numbers():

@@ -4,10 +4,10 @@ import json
 
 from fastapi.testclient import TestClient
 
-from myers.api.app import create_app
-from myers.api.config import Settings
-from myers.observability import EventLog
-from myers.security import sign
+from grounded.api.app import create_app
+from grounded.api.config import Settings
+from grounded.observability import EventLog
+from grounded.security import sign
 
 SECRET = "test-webhook-secret"
 DIFF = (
