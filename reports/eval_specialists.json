@@ -1,0 +1,31 @@
+{
+  "mode": "specialists",
+  "precision": 0.2222,
+  "recall": 1.0,
+  "f1": 0.3636,
+  "tp": 4,
+  "fp": 14,
+  "fn": 0,
+  "cases": [
+    {
+      "name": "clean_pr",
+      "precision": 0.0,
+      "recall": 1.0,
+      "tp": 0,
+      "fp": 6,
+      "fn": 0,
+      "decision": "approve",
+      "escalated": false
+    },
+    {
+      "name": "security_pr",
+      "precision": 0.3333,
+      "recall": 1.0,
+      "tp": 4,
+      "fp": 8,
+      "fn": 0,
+      "decision": "request_changes",
+      "escalated": true
+    }
+  ]
+}

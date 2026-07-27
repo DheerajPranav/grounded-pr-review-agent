@@ -1,33 +1,31 @@
 # CURRENT — rolling state
 
-**Active milestone:** M3 COMPLETE (verified green, live on Groq) → next M4
-**Loop phase:** M3 exited L4 VERIFY green (all four gate items met, offline tests + live demo)
+**Active milestone:** M4 COMPLETE (verified green) — the M1→M4 sprint is DONE.
+**Loop phase:** all four milestone gates green (offline tests + live Groq runs).
 **Last updated:** 2026-07-27
 
-## What exists (M1 + M2 + M3 shipped)
-- Genesis spine + ingested architecture (`.genesis/`).
-- M1: modular monolith, deterministic baseline reviewer, golden eval, events spine, HITL confidence gate.
+## Shipped (M1 → M4)
+- M1: modular monolith, deterministic baseline reviewer, golden eval, events spine, confidence gate.
 - M2: single LLM reviewer on Groq behind `core.llm`; cost events + BudgetGuard (ADR-004).
-- M3: **grounded specialist fan-out**:
-  - `memory/`: `Embedder` interface + local `HashingEmbedder` (deterministic, offline), `InMemoryCodeStore`
-    with hybrid retrieval (dense cosine + exact-identifier, RRF). Ingest from a diff or a repo dir.
-  - `orchestrator/local_engine.py`: `LocalFanoutEngine` implements `core.workflow_engine` — runs the four
-    specialists in PARALLEL with per-node timeout + partial-completion checkpoint (swap for LangGraph/Temporal).
-  - `agents/specialists.py`: security/quality/tests/docs specialists (LLMReviewAgent scoped per domain,
-    retrieval-grounded, category-filtered). Aggregator (built in M1) merges/dedups/records agreement.
-- **49 tests pass, all offline** (FakeLLM). CLI: `--mode specialists [--repo DIR]`.
+- M3: grounded specialist fan-out (4 specialists, parallel, per-node timeout) behind `core.workflow_engine`;
+  hybrid retrieval (dense + exact, RRF) over a local code memory.
+- M4: confidence-routed HITL:
+  - `hitl/ApprovalQueue`: auto-post vs enqueue; decide (approve/reject); dispute; feedback — all on the spine.
+  - `security/`: prompt-injection guard (forces escalation), HMAC verify (constant-time), idempotency store.
+  - `observability/trace.py` + `myers trace <id> --events`: full review reconstruction from the spine.
+  - `reports/eval_baseline_vs_upgraded.md` + JSON; `--min-precision` regression gate.
+- **62 tests pass, all offline** (FakeLLM). CLI: review (baseline|llm|specialists), eval (+--report, --min-precision), trace.
 
-## Live demo (Groq, 2026-07-27)
-- `python -m myers review examples/sample.diff --mode specialists --cap 0.50`
-- 4 parallel calls, ~1s, **$0.0020**, 10 findings across all four domains; security+quality both catch the
-  secret; tests flags untested paths; docs flags the missing docstring (agreement recorded); CRITICAL escalated.
+## Measured (live on Groq, 2026-07-27)
+- baseline P=1.00 R=1.00 · llm P=0.60 R=0.75 · specialists P=0.22 R=1.00.
+- Recall rises toward the fan-out; precision trades off → resolved by the HITL confidence gate + human triage.
+- Cost ≈ $0.0005 (llm) / $0.0020 (specialists) per review; ~1s.
 
-## Next — M4: confidence-routed HITL + proof
-- Human approval queue for CRITICAL/low-confidence/irreversible; escalation + dispute + feedback.
-- Prompt-injection guard + (later) HMAC/idempotency on ingress; full event-spine trace viewer (`trace <id>`).
-- Baseline-vs-upgraded eval report + regression gate on precision drop.
+## Beyond M4 (separate production sprint — needs paid accounts)
+Tiger Cloud spine (pgvector/hypertables/continuous aggregates), real GitHub App webhook + posting,
+Next.js dashboard, Railway deploy, CI/CD eval gates. The seams (`core.workflow_engine`, `core.llm`,
+memory `Embedder`/store, `security` ingress primitives) are already in place for these to drop in.
 
 ## Notes / decisions
-- Provider: Groq (chat only). Embeddings are local (hashing vectorizer) behind a swappable interface.
-- Commits: author Dheeraj Pranav, NO AI co-author trailer. Push per milestone. Public repo.
-- Attribution: Dheeraj + Genesis only. No original-author/cohort/assignment references committed.
+- Provider: Groq (chat only); embeddings local behind a swappable interface.
+- Commits: author Dheeraj Pranav, NO AI trailer. Public repo. Attribution: Dheeraj + Genesis only.

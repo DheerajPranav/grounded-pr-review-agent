@@ -23,6 +23,7 @@ from myers.economics import BudgetGuard
 from myers.models import Review
 from myers.observability import EventLog
 from myers.orchestrator.local_engine import FanoutInput, LocalFanoutEngine
+from myers.security import scan_injection
 
 DEFAULT_AGENT_TIMEOUT_S = 30.0
 
@@ -52,6 +53,12 @@ class ReviewPipeline:
             self.events.record(review_id, "diffing", "tool.call", outcome="parse_error",
                                payload={"error": err})
 
+        # Prompt-injection guard: if the change tries to talk to the reviewer, force a human.
+        injection = scan_injection("\n".join(a.content for _, a in diff.added_lines))
+        if injection:
+            self.events.record(review_id, "security", "decision",
+                               outcome="prompt_injection_detected", payload={"patterns": injection})
+
         def emit_span(**kw) -> None:
             self.events.record(review_id, kw.pop("agent"), kw.pop("event_type"), **kw)
 
@@ -65,6 +72,11 @@ class ReviewPipeline:
         agent_findings = [fan.results[a.name] for a in self.agents if a.name in fan.results]
         review = self.aggregator.merge(review_id, self.mode, agent_findings)
         review.degraded = fan.degraded
+        if injection and not review.escalated:
+            review.escalated = True
+            review.escalation_reason = (
+                f"prompt injection detected ({', '.join(injection)}) — routed to a human"
+            )
         review.latency_ms = int((time.time() - started) * 1000)
         review.cost_usd = self.events.total_cost()
 

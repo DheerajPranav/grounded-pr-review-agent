@@ -1,0 +1,31 @@
+{
+  "mode": "baseline",
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "tp": 4,
+  "fp": 0,
+  "fn": 0,
+  "cases": [
+    {
+      "name": "clean_pr",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "decision": "approve",
+      "escalated": false
+    },
+    {
+      "name": "security_pr",
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "decision": "request_changes",
+      "escalated": true
+    }
+  ]
+}

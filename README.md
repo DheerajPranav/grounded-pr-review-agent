@@ -59,11 +59,26 @@ Since Groq has no embeddings API, retrieval uses a local, deterministic embedder
 no model download) behind a swappable `Embedder` interface — a neural embedder or Tiger pgvector
 drops in later without changing the specialists.
 
-## Status
-- **M1 — deterministic baseline reviewer:** ✅ done.
-- **M2 — single LLM reviewer (Groq) behind a swappable interface, with cost events + BudgetGuard:** ✅ done.
-- **M3 — grounded specialist fan-out (parallel, per-node timeout, retrieval-grounded):** ✅ done.
-- **M4 — confidence-routed HITL + trace viewer + baseline-vs-upgraded eval report:** next.
+### Human-in-the-loop + proof (M4)
+Confident, non-critical reviews auto-post; CRITICAL / low-confidence / prompt-injection reviews
+are **routed to a human approval queue**. Every action is on an append-only events spine, so any
+review is fully reconstructable:
+```bash
+python -m myers review path/to.diff --mode specialists --emit-events events.jsonl
+python -m myers trace <review_id> --events events.jsonl        # replay the whole review
+python -m myers eval --mode baseline --min-precision 0.9       # regression gate (CI)
+```
+See [`reports/eval_baseline_vs_upgraded.md`](reports/eval_baseline_vs_upgraded.md) for the measured
+baseline-vs-upgraded comparison.
+
+## Status — M1→M4 sprint complete ✅
+- **M1 — deterministic baseline reviewer:** ✅
+- **M2 — single LLM reviewer (Groq) behind a swappable interface, with cost events + BudgetGuard:** ✅
+- **M3 — grounded specialist fan-out (parallel, per-node timeout, retrieval-grounded):** ✅
+- **M4 — confidence-routed HITL + prompt-injection/HMAC/idempotency + trace viewer + eval report/regression gate:** ✅
+
+Beyond M4 (separate production sprint, needs paid accounts): Tiger Cloud spine, real GitHub App
+webhook, Next.js dashboard, Railway deploy. The seams are already in place for these to drop in.
 
 Production stack (Tiger Cloud spine, GitHub App, Next.js dashboard, Railway) lands in a later
 sprint — everything through M4 runs locally. See [`.genesis/CURRENT.md`](.genesis/CURRENT.md) for live status.

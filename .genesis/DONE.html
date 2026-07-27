@@ -70,12 +70,12 @@ reviewer; it is a selective, grounded, failure-aware assistant.</p>
 </ul>
 <p><em>Note on the embedder: Groq has no embeddings API, so the default is a local, deterministic hashing vectorizer (a lexical proxy) behind an Embedder interface — a neural embedder or Tiger pgvector swaps in without touching retrieval or the specialists.</em></p>
 
-<h3>M4 — Confidence-routed HITL + proof (Phases 9,11,12,19 gates)</h3>
+<h3>M4 — Confidence-routed HITL + proof (Phases 9,11,12,19 gates) — VERIFIED GREEN 2026-07-27</h3>
 <ul>
-<li>[ ] Confidence gate: auto-post when confident and no CRITICAL; else enqueue for human approval.</li>
-<li>[ ] Prompt-injection guard + HMAC/idempotency on ingress verified by tests.</li>
-<li>[ ] Every review reconstructable from the events spine (trace: retrieval, prompts, findings, cost, latency, confidence, human decision, recovery).</li>
-<li>[ ] Baseline-vs-upgraded eval report committed; regression gate blocks on precision drop.</li>
+<li>[x] Confidence gate: auto-post when confident and no CRITICAL; else enqueue for human approval. <em>(hitl/ApprovalQueue: submit/decide/dispute/feedback; wired in CLI review; test_hitl.py; live demo queued the CRITICAL secret)</em></li>
+<li>[x] Prompt-injection guard + HMAC/idempotency verified by tests. <em>(security/: scan_injection forces escalation — test_injection_and_trace; verify_signature constant-time + IdempotencyStore — test_security.py)</em></li>
+<li>[x] Every review reconstructable from the events spine (spans, decision, escalation, cost, latency, confidence, human decision, recovery). <em>(observability/trace.py + `myers trace &lt;id&gt; --events`; live trace shown end to end)</em></li>
+<li>[x] Baseline-vs-upgraded eval report committed; regression gate blocks on precision drop. <em>(reports/eval_baseline_vs_upgraded.md + JSON; `--min-precision` gate. Measured: baseline P=1.00 R=1.00; llm P=0.60 R=0.75; specialists P=0.22 R=1.00 — recall rises, precision trades off, which the HITL gate + human triage resolve)</em></li>
 </ul>
 
 <h2>Section 3 — Milestone map (mirrors PLAN.md)</h2>

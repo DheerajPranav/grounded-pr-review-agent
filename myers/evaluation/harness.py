@@ -59,6 +59,20 @@ class EvalReport:
         p, r = self.precision, self.recall
         return 2 * p * r / (p + r) if (p + r) else 0.0
 
+    def to_dict(self) -> dict:
+        return {
+            "mode": self.mode,
+            "precision": round(self.precision, 4),
+            "recall": round(self.recall, 4),
+            "f1": round(self.f1, 4),
+            "tp": self.tp, "fp": self.fp, "fn": self.fn,
+            "cases": [
+                {"name": c.name, "precision": round(c.precision, 4), "recall": round(c.recall, 4),
+                 "tp": c.tp, "fp": c.fp, "fn": c.fn, "decision": c.decision, "escalated": c.escalated}
+                for c in self.cases
+            ],
+        }
+
     def render(self) -> str:
         lines = [f"EVAL [{self.mode}]  precision={self.precision:.2f} recall={self.recall:.2f} "
                  f"f1={self.f1:.2f}  (TP={self.tp} FP={self.fp} FN={self.fn})",

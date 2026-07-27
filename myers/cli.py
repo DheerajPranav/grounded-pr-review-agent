@@ -13,6 +13,7 @@ from pathlib import Path
 
 from myers.agents import BaselineAgent, LLMReviewAgent, build_specialists
 from myers.evaluation import evaluate
+from myers.hitl import ApprovalQueue, TicketStatus
 from myers.models import Decision
 from myers.orchestrator import ReviewPipeline
 
@@ -57,9 +58,17 @@ def cmd_review(args) -> int:
     pipeline = ReviewPipeline(agents, mode, daily_cap_usd=args.cap, retriever=store.hybrid_search)
     review = pipeline.review_text(diff_text)
     print(review.render())
+
+    # Confidence-routed HITL: auto-post, or hold for a human.
+    ticket = ApprovalQueue(events=pipeline.events).submit(review)
+    if ticket.status is TicketStatus.PENDING:
+        print(f"\n[HITL] queued for human approval — {ticket.reason}")
+    else:
+        print("\n[HITL] auto-posted (confident, no CRITICAL, no injection)")
+
     if args.emit_events:
         pipeline.events.flush_jsonl(args.emit_events)
-        print(f"\n[events -> {args.emit_events}]")
+        print(f"[events -> {args.emit_events}]  (reconstruct with: myers trace {review.review_id} --events {args.emit_events})")
     # CI-friendly exit code: 0 clean, 1 changes/escalation requested.
     return 0 if (review.decision is Decision.APPROVE and not review.escalated) else 1
 
@@ -68,6 +77,11 @@ def cmd_eval(args) -> int:
     agents, mode = _agents_for_mode(args.mode)
     report = evaluate(agents, mode, daily_cap_usd=args.cap)
     print(report.render())
+    if args.report:
+        import json
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
+        print(f"\n[report -> {args.report}]")
     if args.min_precision is not None and report.precision < args.min_precision:
         print(f"\nREGRESSION GATE FAILED: precision {report.precision:.2f} "
               f"< min {args.min_precision:.2f}", file=sys.stderr)
@@ -76,7 +90,14 @@ def cmd_eval(args) -> int:
 
 
 def cmd_trace(args) -> int:
-    print("trace: the event-spine trace viewer arrives at M4 (see .genesis/PLAN.md).")
+    from myers.observability.trace import load_events, render_trace
+    if not args.events:
+        print("error: pass --events PATH (write it during review with --emit-events PATH)", file=sys.stderr)
+        return 2
+    if not Path(args.events).exists():
+        print(f"error: no such events file: {args.events}", file=sys.stderr)
+        return 2
+    print(render_trace(load_events(args.events), args.review_id))
     return 0
 
 
@@ -97,12 +118,13 @@ def build_parser() -> argparse.ArgumentParser:
     e = sub.add_parser("eval", help="score the golden PRs")
     e.add_argument("--mode", default="baseline", choices=["baseline", "llm", "specialists"])
     e.add_argument("--cap", type=float, default=None, metavar="USD", help="daily budget cap for LLM modes")
-    e.add_argument("--report", action="store_true", help="(reserved) write a persisted report")
+    e.add_argument("--report", metavar="PATH", help="write the eval report as JSON to PATH")
     e.add_argument("--min-precision", type=float, default=None, help="regression gate threshold")
     e.set_defaults(func=cmd_eval)
 
-    t = sub.add_parser("trace", help="reconstruct a review from the event spine (M4)")
+    t = sub.add_parser("trace", help="reconstruct a review from the event spine")
     t.add_argument("review_id")
+    t.add_argument("--events", metavar="PATH", help="JSONL events file (from review --emit-events)")
     t.set_defaults(func=cmd_trace)
     return p
 
