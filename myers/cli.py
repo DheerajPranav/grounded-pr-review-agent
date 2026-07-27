@@ -11,10 +11,18 @@ import argparse
 import sys
 from pathlib import Path
 
-from myers.agents import BaselineAgent, LLMReviewAgent
+from myers.agents import BaselineAgent, LLMReviewAgent, build_specialists
 from myers.evaluation import evaluate
 from myers.models import Decision
 from myers.orchestrator import ReviewPipeline
+
+
+def _groq_client():
+    from myers.tools import GroqLLMClient
+    try:
+        return GroqLLMClient()
+    except RuntimeError as exc:
+        raise SystemExit(str(exc))
 
 
 def _agents_for_mode(mode: str):
@@ -22,17 +30,10 @@ def _agents_for_mode(mode: str):
         return [BaselineAgent()], "baseline"
     if mode == "llm":
         # One LLM reviewer, backed by Groq (free tier). FakeLLM is used only in tests.
-        from myers.tools import GroqLLMClient
-        try:
-            client = GroqLLMClient()
-        except RuntimeError as exc:
-            raise SystemExit(str(exc))
-        return [LLMReviewAgent(client)], "llm"
+        return [LLMReviewAgent(_groq_client())], "llm"
     if mode == "specialists":
-        raise SystemExit(
-            "mode 'specialists' (grounded 4-agent fan-out) arrives at M3 (see .genesis/PLAN.md). "
-            "'baseline' and 'llm' run today."
-        )
+        # Four grounded specialists (security/quality/tests/docs) fanned out in parallel.
+        return build_specialists(_groq_client()), "specialists"
     raise SystemExit(f"unknown mode: {mode}")
 
 
@@ -41,9 +42,20 @@ def cmd_review(args) -> int:
     if not diff_path.exists():
         print(f"error: no such diff file: {diff_path}", file=sys.stderr)
         return 2
+    diff_text = diff_path.read_text(encoding="utf-8")
     agents, mode = _agents_for_mode(args.mode)
-    pipeline = ReviewPipeline(agents, mode, daily_cap_usd=args.cap)
-    review = pipeline.review_text(diff_path.read_text(encoding="utf-8"))
+
+    # Build the grounding memory: a real repo snapshot if given, else the diff's own context.
+    from myers.diffing import parse_unified_diff
+    from myers.memory import InMemoryCodeStore
+    store = InMemoryCodeStore()
+    if args.repo:
+        n = store.ingest_directory(args.repo)
+        print(f"[grounding: indexed {n} chunks from {args.repo}]")
+    store.ingest_diff_context(parse_unified_diff(diff_text))
+
+    pipeline = ReviewPipeline(agents, mode, daily_cap_usd=args.cap, retriever=store.hybrid_search)
+    review = pipeline.review_text(diff_text)
     print(review.render())
     if args.emit_events:
         pipeline.events.flush_jsonl(args.emit_events)
@@ -77,6 +89,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--mode", default="baseline", choices=["baseline", "llm", "specialists"])
     r.add_argument("--cap", type=float, default=None, metavar="USD",
                    help="daily budget cap; the LLM is hard-blocked once spend reaches it (ADR-004)")
+    r.add_argument("--repo", metavar="DIR",
+                   help="index this repo snapshot for retrieval grounding (specialists mode)")
     r.add_argument("--emit-events", metavar="PATH", help="flush the event spine to a JSONL file")
     r.set_defaults(func=cmd_review)
 

@@ -15,6 +15,7 @@ _RANK = {
     "diffing": 2,
     "observability": 2,
     "tools": 2,
+    "memory": 2,
     "agents": 3,
     "aggregation": 3,
     "economics": 3,

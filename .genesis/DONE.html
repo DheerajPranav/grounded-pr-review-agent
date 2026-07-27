@@ -61,13 +61,14 @@ reviewer; it is a selective, grounded, failure-aware assistant.</p>
 <li>[x] Eval shows the LLM reviewer vs baseline on the golden set (measured, live on Groq 2026-07-27). <em>baseline P=1.00 R=1.00 (precise but shallow); llm P=0.60 R=0.75 (deeper — catches a semantic missing-arg the regex cannot — but chattier: 2 FP on the clean PR, misses the structural no-tests heuristic). Complementary, which is why M3 runs both and M4 routes uncertain LLM findings to a human. The first live run also exposed a metric flaw (matching on mode-specific rule_id); fixed to match on (category, file, line).</em></li>
 </ul>
 
-<h3>M3 — Grounded specialist fan-out (Phases 4,6,8 gates)</h3>
+<h3>M3 — Grounded specialist fan-out (Phases 4,6,8 gates) — VERIFIED GREEN 2026-07-27 (live on Groq)</h3>
 <ul>
-<li>[ ] Four specialists (security, quality, tests, docs) run in parallel behind the workflow-engine interface.</li>
-<li>[ ] Hybrid retrieval (semantic + exact-identifier) grounds each specialist; every finding cites a chunk.</li>
-<li>[ ] Aggregator merges + dedups (keeps highest confidence, records agreement) and computes overall confidence.</li>
-<li>[ ] Every node has a timeout; a stalled specialist cannot hang the join (partial-completion path exercised).</li>
+<li>[x] Four specialists (security, quality, tests, docs) run in parallel behind the workflow-engine interface. <em>(orchestrator/local_engine.py implements core.workflow_engine; test_fanout_ran_four_parallel_nodes; live: 4 parallel Groq calls, ~1s, $0.0020)</em></li>
+<li>[x] Hybrid retrieval (dense cosine + exact-identifier, RRF) grounds each specialist; every finding cites the diff chunk it is about. <em>(memory/InMemoryCodeStore; a retrieval tool.call event per specialist proves grounding; every Finding carries diff-line Evidence — grounded-or-nothing)</em></li>
+<li>[x] Aggregator merges + dedups (keeps highest confidence, records agreement) and computes overall confidence. <em>(aggregation/aggregator.py; test_aggregator; live "also raised by" shown)</em></li>
+<li>[x] Every node has a timeout; a stalled specialist cannot hang the join (partial-completion path exercised). <em>(LocalFanoutEngine per-node timeout; test_stalled_specialist_degrades_join_survives)</em></li>
 </ul>
+<p><em>Note on the embedder: Groq has no embeddings API, so the default is a local, deterministic hashing vectorizer (a lexical proxy) behind an Embedder interface — a neural embedder or Tiger pgvector swaps in without touching retrieval or the specialists.</em></p>
 
 <h3>M4 — Confidence-routed HITL + proof (Phases 9,11,12,19 gates)</h3>
 <ul>

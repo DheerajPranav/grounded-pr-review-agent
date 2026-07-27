@@ -48,11 +48,22 @@ python -m myers review examples/sample.diff --mode llm --cap 0.50
 Every LLM call is recorded to the events spine with its model, tokens, and cost. Tests never call
 Groq — they use a deterministic `FakeLLM`, so the suite stays free and offline.
 
+### Grounded specialist fan-out (M3)
+Four specialists — **security / quality / tests / docs** — run in **parallel**, each grounded by
+hybrid retrieval (dense + exact-identifier) over a code memory, merged by the aggregator.
+```bash
+python -m myers review examples/sample.diff --mode specialists --cap 0.50
+python -m myers review path/to.diff --mode specialists --repo /path/to/checkout   # ground on a real repo
+```
+Since Groq has no embeddings API, retrieval uses a local, deterministic embedder (no extra key,
+no model download) behind a swappable `Embedder` interface — a neural embedder or Tiger pgvector
+drops in later without changing the specialists.
+
 ## Status
 - **M1 — deterministic baseline reviewer:** ✅ done.
 - **M2 — single LLM reviewer (Groq) behind a swappable interface, with cost events + BudgetGuard:** ✅ done.
-- **M3 — grounded specialist fan-out:** next.
-- **M4 — confidence-routed HITL + eval report:** planned.
+- **M3 — grounded specialist fan-out (parallel, per-node timeout, retrieval-grounded):** ✅ done.
+- **M4 — confidence-routed HITL + trace viewer + baseline-vs-upgraded eval report:** next.
 
 Production stack (Tiger Cloud spine, GitHub App, Next.js dashboard, Railway) lands in a later
 sprint — everything through M4 runs locally. See [`.genesis/CURRENT.md`](.genesis/CURRENT.md) for live status.

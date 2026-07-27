@@ -10,7 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from myers.agents.base import Agent
+from myers.diffing import parse_unified_diff
 from myers.evaluation.golden import GoldenCase, load_golden_cases
+from myers.memory import InMemoryCodeStore
 from myers.orchestrator import ReviewPipeline
 
 
@@ -72,8 +74,13 @@ def evaluate(agents: list[Agent], mode: str, cases: list[GoldenCase] | None = No
              daily_cap_usd: float | None = None) -> EvalReport:
     cases = cases if cases is not None else load_golden_cases()
     report = EvalReport(mode=mode)
-    pipeline = ReviewPipeline(agents, mode, daily_cap_usd=daily_cap_usd)
     for case in cases:
+        # Ground each case in its own code memory so specialists retrieve real context;
+        # baseline/single-LLM modes simply ignore the retriever.
+        store = InMemoryCodeStore()
+        store.ingest_diff_context(parse_unified_diff(case.diff_text))
+        pipeline = ReviewPipeline(agents, mode, daily_cap_usd=daily_cap_usd,
+                                  retriever=store.hybrid_search)
         review = pipeline.review_text(case.diff_text, review_id=case.name)
         found = {(f.category.value, f.file_path, f.line_start) for f in review.findings}
         tp = len(found & case.expected)

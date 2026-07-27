@@ -1,27 +1,28 @@
-"""In-process review pipeline (M1 engine).
+"""Review pipeline — drives one review end to end.
 
-Flow: parse diff -> run agent(s) -> aggregate -> emit events -> Review.
-Built to accept a LIST of agents so the M3 specialist fan-out reuses it unchanged; the
-only difference there is four agents behind the LangGraph engine instead of one in-process.
+Flow: parse diff -> fan out agent(s) via the workflow engine (parallel, per-node timeout,
+partial completion) -> aggregate -> emit events -> Review. One agent (M1/M2) or four
+grounded specialists (M3) run through the SAME engine and aggregator — the Finding contract
+is the only interface between them.
 
-Failure-mode discipline (from the failure matrix):
-  - Every agent runs under a per-node TIMEOUT. A stalled/failing agent cannot hang the join;
-    its slot degrades to "partial completion" recorded on the Review — degrade slower-but-correct.
+Failure-mode discipline: a stalled/failing node degrades to a recorded partial result; the
+join never hangs. Cost lands on the spine; the BudgetGuard hard-blocks before spend (ADR-004).
 """
 
 from __future__ import annotations
 
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+from collections.abc import Callable
 
 from myers.agents.base import Agent
 from myers.aggregation import Aggregator
 from myers.core.context import ReviewContext
 from myers.diffing.parser import parse_unified_diff
 from myers.economics import BudgetGuard
-from myers.models import Finding, Review
+from myers.models import Review
 from myers.observability import EventLog
+from myers.orchestrator.local_engine import FanoutInput, LocalFanoutEngine
 
 DEFAULT_AGENT_TIMEOUT_S = 30.0
 
@@ -29,13 +30,14 @@ DEFAULT_AGENT_TIMEOUT_S = 30.0
 class ReviewPipeline:
     def __init__(self, agents: list[Agent], mode: str, *, events: EventLog | None = None,
                  agent_timeout_s: float = DEFAULT_AGENT_TIMEOUT_S,
-                 daily_cap_usd: float | None = None) -> None:
+                 daily_cap_usd: float | None = None,
+                 retriever: Callable[[str, int], list] | None = None) -> None:
         self.agents = agents
         self.mode = mode
         self.events = events or EventLog()
         self.aggregator = Aggregator()
-        self.agent_timeout_s = agent_timeout_s
-        # BudgetGuard reads the running cost off the same event spend (ADR-004).
+        self.engine = LocalFanoutEngine(node_timeout_s=agent_timeout_s)
+        self.retriever = retriever
         self.budget = (
             BudgetGuard(daily_cap_usd, self.events.total_cost) if daily_cap_usd is not None else None
         )
@@ -50,25 +52,19 @@ class ReviewPipeline:
             self.events.record(review_id, "diffing", "tool.call", outcome="parse_error",
                                payload={"error": err})
 
-        agent_findings: list[list[Finding]] = []
-        degraded: list[str] = []
-        for agent in self.agents:
-            self.events.record(review_id, agent.name, "span.start")
-            t0 = time.time()
-            ctx = self._context_for(review_id, agent.name)
-            try:
-                findings = self._run_with_timeout(agent, diff, ctx)
-                agent_findings.append(findings)
-                self.events.record(review_id, agent.name, "span.end",
-                                   latency_ms=int((time.time() - t0) * 1000),
-                                   payload={"n_findings": len(findings)})
-            except (FuturesTimeout, Exception) as exc:  # degrade, never crash the review
-                degraded.append(f"{agent.name}: {type(exc).__name__}")
-                self.events.record(review_id, agent.name, "span.end", outcome="degraded",
-                                   payload={"error": type(exc).__name__})
+        def emit_span(**kw) -> None:
+            self.events.record(review_id, kw.pop("agent"), kw.pop("event_type"), **kw)
 
+        fan = self.engine.run(review_id, FanoutInput(
+            agents=self.agents, diff=diff,
+            context_for=lambda name: self._context_for(review_id, name),
+            emit_span=emit_span,
+        ))
+
+        # Preserve agent order for deterministic aggregation.
+        agent_findings = [fan.results[a.name] for a in self.agents if a.name in fan.results]
         review = self.aggregator.merge(review_id, self.mode, agent_findings)
-        review.degraded = degraded
+        review.degraded = fan.degraded
         review.latency_ms = int((time.time() - started) * 1000)
         review.cost_usd = self.events.total_cost()
 
@@ -90,8 +86,5 @@ class ReviewPipeline:
             review_id=review_id,
             emit=emit,
             check_budget=(self.budget.check if self.budget is not None else ReviewContext.check_budget),
+            retrieve=(self.retriever if self.retriever is not None else ReviewContext.retrieve),
         )
-
-    def _run_with_timeout(self, agent: Agent, diff, ctx: ReviewContext) -> list[Finding]:
-        with ThreadPoolExecutor(max_workers=1) as ex:
-            return ex.submit(agent.review, diff, ctx).result(timeout=self.agent_timeout_s)
