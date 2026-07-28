@@ -35,7 +35,8 @@ def _agents_for(mode: str, groq_api_key: str):
     return build_specialists(client), "specialists"
 
 
-def run_review_job(payload: JobPayload, *, settings, github, events: EventLog | None = None) -> Review:
+def run_review_job(payload: JobPayload, *, settings, github, events: EventLog | None = None,
+                   queue=None) -> Review:
     events = events or EventLog()
     diff_text = github.get_pr_diff(payload.repo_full_name, payload.pr_number)
 
@@ -45,12 +46,14 @@ def run_review_job(payload: JobPayload, *, settings, github, events: EventLog | 
     pipeline = ReviewPipeline(agents, mode, events=events, retriever=store.hybrid_search,
                               daily_cap_usd=settings.daily_cap_usd)
 
-    review_id = f"{payload.repo_full_name}#{payload.pr_number}@{payload.delivery_id or 'local'}"
+    # URL-safe id (used as a path param by the dashboard/trace endpoints).
+    safe_repo = payload.repo_full_name.replace("/", "_")
+    review_id = f"{safe_repo}_pr{payload.pr_number}_{payload.delivery_id or 'local'}"
     review = pipeline.review_text(diff_text, review_id=review_id)
 
     # Confidence-routed HITL: escalated reviews are posted as a COMMENT (a human decides),
     # confident ones as the actual APPROVE / REQUEST_CHANGES.
-    ApprovalQueue(events=events).submit(review)
+    (queue or ApprovalQueue(events=events)).submit(review)
     github.post_review(payload.repo_full_name, payload.pr_number, review)
 
     # Durable persistence to the Tiger spine when configured (best-effort; degrades to no-op).

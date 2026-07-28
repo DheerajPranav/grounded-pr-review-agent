@@ -44,8 +44,21 @@ class EventLog:
     def for_review(self, review_id: str) -> list[AgentEvent]:
         return [e for e in self._events if e.review_id == review_id]
 
+    def all(self) -> list[AgentEvent]:
+        return list(self._events)
+
+    def review_ids(self) -> list[str]:
+        return list(dict.fromkeys(e.review_id for e in self._events))
+
     def total_cost(self) -> float:
         return round(sum(e.cost_usd for e in self._events), 6)
+
+    def cost_by_agent(self) -> dict[str, float]:
+        out: dict[str, float] = {}
+        for e in self._events:
+            if e.cost_usd:
+                out[e.agent] = round(out.get(e.agent, 0.0) + e.cost_usd, 6)
+        return out
 
     def flush_jsonl(self, path: str | Path) -> None:
         p = Path(path)

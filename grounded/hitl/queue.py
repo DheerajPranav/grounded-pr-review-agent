@@ -66,6 +66,9 @@ class ApprovalQueue:
     def pending(self) -> list[ReviewTicket]:
         return [t for t in self._tickets.values() if t.status is TicketStatus.PENDING]
 
+    def all(self) -> list[ReviewTicket]:
+        return list(self._tickets.values())
+
     def get(self, review_id: str) -> ReviewTicket | None:
         return self._tickets.get(review_id)
 

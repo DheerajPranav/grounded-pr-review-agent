@@ -13,7 +13,9 @@ import json
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 
+from grounded.api.routers import build_api_router, dashboard_router
 from grounded.core.config import Settings
+from grounded.hitl import ApprovalQueue
 from grounded.integrations import GitHubClient, PullRequestEvent
 from grounded.job_queue import JobPayload, run_review_job
 from grounded.observability import EventLog
@@ -25,14 +27,19 @@ def create_app(settings: Settings | None = None, *, github=None, events: EventLo
                job_runner=None) -> FastAPI:
     settings = settings or Settings.from_env()
     events = events or EventLog()
+    queue = ApprovalQueue(events=events)
     github = github or GitHubClient(token=settings.github_token)
     validator = WebhookValidator(settings.github_webhook_secret)
     if job_runner is None:
-        job_runner = functools.partial(run_review_job, settings=settings, github=github, events=events)
+        job_runner = functools.partial(run_review_job, settings=settings, github=github,
+                                       events=events, queue=queue)
 
     app = FastAPI(title="grounded-pr-review-agent", version="0.1.0")
     app.state.settings = settings
     app.state.events = events
+    app.state.queue = queue
+    app.include_router(build_api_router(events, queue))
+    app.include_router(dashboard_router())
 
     @app.get("/healthz")
     def healthz() -> dict:
