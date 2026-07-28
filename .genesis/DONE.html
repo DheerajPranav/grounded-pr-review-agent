@@ -78,6 +78,15 @@ reviewer; it is a selective, grounded, failure-aware assistant.</p>
 <li>[x] Baseline-vs-upgraded eval report committed; regression gate blocks on precision drop. <em>(reports/eval_baseline_vs_upgraded.md + JSON; `--min-precision` gate. Measured: baseline P=1.00 R=1.00; llm P=0.60 R=0.75; specialists P=0.22 R=1.00 — recall rises, precision trades off, which the HITL gate + human triage resolve)</em></li>
 </ul>
 
+<h3>Production (P1–P4, Phases 3,13,14,17 gates) — VERIFIED GREEN 2026-07-28</h3>
+<ul>
+<li>[x] P1 — FastAPI webhook ingress: HMAC verify + idempotency + enqueue + 200 fast; worker runs the pipeline; GitHub client posts the review (escalated → COMMENT). <em>(api/, webhook_receiver/, integrations/, job_queue/; test_api.py; uvicorn boot + /healthz verified)</em></li>
+<li>[x] P2 — Tiger/Postgres data spine behind the seam: migration DDL (3 lanes + truth), async pool, event + truth repositories, pgvector code store; in-memory fallback when unset. <em>(database/, data/, memory/tiger_client, observability/tiger_events; test_data_spine.py — SQL + RRF + fallback unit-tested with a fake connection; live-Tiger verification is the documented SETUP.md step)</em></li>
+<li>[x] P3 — API routers + dashboard: economics/reviews/trace/HITL endpoints; self-contained dashboard at /. <em>(api/routers.py; test_dashboard.py; uvicorn + dashboard + /api verified)</em></li>
+<li>[x] P4 — deploy-ready: Dockerfile, docker-compose (Tiger+Redis+app+worker), Procfile, railway.json, `grounded migrate`, and SETUP.md handoff for the account-only steps.</li>
+</ul>
+<p><em>Honest scope: no Docker/Postgres/Redis locally, so the DB/queue paths are unit-tested behind fakes + graceful fallbacks and are drop-in ready; end-to-end verification against a live Tiger URL / GitHub App / Railway is the user's SETUP.md checklist.</em></p>
+
 <h2>Section 3 — Milestone map (mirrors PLAN.md)</h2>
 <ol>
 <li><strong>M1</strong> Deterministic baseline reviewer — demo: <code>python -m grounded review examples/sample.diff</code></li>

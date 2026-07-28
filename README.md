@@ -77,11 +77,24 @@ baseline-vs-upgraded comparison.
 - **M3 — grounded specialist fan-out (parallel, per-node timeout, retrieval-grounded):** ✅
 - **M4 — confidence-routed HITL + prompt-injection/HMAC/idempotency + trace viewer + eval report/regression gate:** ✅
 
-Beyond M4 (separate production sprint, needs paid accounts): Tiger Cloud spine, real GitHub App
-webhook, Next.js dashboard, Railway deploy. The seams are already in place for these to drop in.
+## Production (P1–P4) ✅
+The full production path is built and runs behind graceful fallbacks — it lights up the real
+services when you add credentials, and runs in-process otherwise.
+```bash
+pip install -e ".[server]"
+python -m grounded serve      # FastAPI webhook ingress on :8000, dashboard at http://localhost:8000
+```
+- **P1 — ingress:** FastAPI `POST /webhook/github` (HMAC verify + idempotency + enqueue, 200 fast),
+  a worker (in-process BackgroundTask, or ARQ/Redis), and a GitHub client that posts the review.
+- **P2 — data spine:** the Tiger Cloud / Postgres schema (`scripts/migrations/`), event + truth
+  repositories, and a pgvector code store — all behind the same seams (in-memory fallback if unset).
+- **P3 — dashboard + API:** a self-contained dashboard at `/` (cost, HITL queue, approve/reject) and
+  `/api/*` routers (economics, reviews, trace, HITL).
+- **P4 — deploy:** `Dockerfile`, `docker-compose.yml` (Tiger + Redis + app + worker), `Procfile`,
+  `railway.json`.
 
-Production stack (Tiger Cloud spine, GitHub App, Next.js dashboard, Railway) lands in a later
-sprint — everything through M4 runs locally. See [`.genesis/CURRENT.md`](.genesis/CURRENT.md) for live status.
+**To go fully live** (Groq, a GitHub App, Tiger Cloud, Railway) follow [`SETUP.md`](SETUP.md).
+See [`.genesis/CURRENT.md`](.genesis/CURRENT.md) for live status.
 
 ## How it was built
 Built by **Dheeraj** using **Genesis** — a loop-based, AI-native development method.

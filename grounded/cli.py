@@ -89,6 +89,26 @@ def cmd_eval(args) -> int:
     return 0
 
 
+def cmd_migrate(args) -> int:
+    import asyncio
+    from grounded.core.config import Settings
+    from grounded.database import Database
+    s = Settings.from_env()
+    if not s.tiger_database_url:
+        raise SystemExit("TIGER_DATABASE_URL not set (see .env.example / SETUP.md)")
+
+    async def _run() -> None:
+        db = await Database(s.tiger_database_url).connect()
+        try:
+            await db.apply_migration()
+        finally:
+            await db.close()
+
+    asyncio.run(_run())
+    print("Tiger schema migration applied.")
+    return 0
+
+
 def cmd_serve(args) -> int:
     try:
         import uvicorn
@@ -142,6 +162,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--port", type=int, default=8000)
     s.add_argument("--reload", action="store_true")
     s.set_defaults(func=cmd_serve)
+
+    m = sub.add_parser("migrate", help="apply the Tiger schema migration (needs TIGER_DATABASE_URL)")
+    m.set_defaults(func=cmd_migrate)
     return p
 
 

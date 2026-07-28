@@ -1,31 +1,31 @@
 # CURRENT — rolling state
 
-**Active milestone:** M4 COMPLETE (verified green) — the M1→M4 sprint is DONE.
-**Loop phase:** all four milestone gates green (offline tests + live Groq runs).
-**Last updated:** 2026-07-27
+**Status:** M1→M4 + production P1→P4 COMPLETE. Renamed to `grounded` / grounded-pr-review-agent.
+**Last updated:** 2026-07-28
 
-## Shipped (M1 → M4)
-- M1: modular monolith, deterministic baseline reviewer, golden eval, events spine, confidence gate.
-- M2: single LLM reviewer on Groq behind `core.llm`; cost events + BudgetGuard (ADR-004).
-- M3: grounded specialist fan-out (4 specialists, parallel, per-node timeout) behind `core.workflow_engine`;
-  hybrid retrieval (dense + exact, RRF) over a local code memory.
-- M4: confidence-routed HITL:
-  - `hitl/ApprovalQueue`: auto-post vs enqueue; decide (approve/reject); dispute; feedback — all on the spine.
-  - `security/`: prompt-injection guard (forces escalation), HMAC verify (constant-time), idempotency store.
-  - `observability/trace.py` + `grounded trace <id> --events`: full review reconstruction from the spine.
-  - `reports/eval_baseline_vs_upgraded.md` + JSON; `--min-precision` regression gate.
-- **62 tests pass, all offline** (FakeLLM). CLI: review (baseline|llm|specialists), eval (+--report, --min-precision), trace.
+## Shipped
+- **M1–M4** (local, runs free): deterministic baseline → single LLM (Groq) behind `core.llm` +
+  BudgetGuard → grounded 4-specialist parallel fan-out behind `core.workflow_engine` + hybrid
+  retrieval → confidence-routed HITL + prompt-injection/HMAC/idempotency + trace viewer + eval report.
+- **Production P1–P4** (behind graceful fallbacks, lit up by credentials):
+  - P1 FastAPI webhook ingress (HMAC+idempotency+enqueue+200 fast) → worker → GitHub post; ARQ-ready.
+  - P2 Tiger/Postgres spine: migration DDL, async pool, event+truth repos, pgvector code store.
+  - P3 API routers (economics/reviews/trace/HITL) + self-contained dashboard at `/`.
+  - P4 Dockerfile, docker-compose (Tiger+Redis+app+worker), Procfile, railway.json, `grounded migrate`, SETUP.md.
+- **79 tests pass, all offline.** `python -m grounded serve` boots; dashboard + /api verified.
 
-## Measured (live on Groq, 2026-07-27)
-- baseline P=1.00 R=1.00 · llm P=0.60 R=0.75 · specialists P=0.22 R=1.00.
-- Recall rises toward the fan-out; precision trades off → resolved by the HITL confidence gate + human triage.
-- Cost ≈ $0.0005 (llm) / $0.0020 (specialists) per review; ~1s.
+## To go fully live (user's account-only steps — see SETUP.md)
+- Groq key (have it, in .env — rotate it), a GitHub App (webhook secret + token), Tiger Cloud URL
+  (`grounded migrate`), Railway deploy. Each is optional; the app degrades gracefully without it.
 
-## Beyond M4 (separate production sprint — needs paid accounts)
-Tiger Cloud spine (pgvector/hypertables/continuous aggregates), real GitHub App webhook + posting,
-Next.js dashboard, Railway deploy, CI/CD eval gates. The seams (`core.workflow_engine`, `core.llm`,
-memory `Embedder`/store, `security` ingress primitives) are already in place for these to drop in.
+## Verified locally (no accounts)
+- baseline/llm/specialists reviews; eval P=1.00/0.60/0.22 (measured); trace; HITL routing;
+  FastAPI ingress with a fake GitHub client; dashboard + economics/HITL API.
+
+## Not end-to-end verified (no local infra)
+- Live Tiger writes/retrieval, live Redis/ARQ worker, real GitHub App webhook, Railway deploy —
+  built + unit-tested behind fakes/fallbacks; verification is the SETUP.md checklist.
 
 ## Notes / decisions
-- Provider: Groq (chat only); embeddings local behind a swappable interface.
-- Commits: author Dheeraj Pranav, NO AI trailer. Public repo. Attribution: Dheeraj + Genesis only.
+- Provider: Groq (chat only); embeddings local. Commits: Dheeraj, no AI trailer. Public repo.
+- Attribution: Dheeraj + Genesis only. No original-author/cohort/assignment references committed.

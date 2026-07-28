@@ -1,0 +1,38 @@
+# Full local production stack: Tiger (TimescaleDB + pgvector + pgvectorscale) + Redis + app + worker.
+#   docker compose up --build
+#   docker compose run --rm app python -m grounded migrate   # apply the schema once
+services:
+  db:
+    # timescaledb-ha bundles timescaledb, pgvector, and pgvectorscale (diskann).
+    image: timescale/timescaledb-ha:pg16
+    environment:
+      POSTGRES_PASSWORD: grounded
+      POSTGRES_DB: grounded
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/home/postgres/pgdata/data"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  app:
+    build: .
+    env_file: [.env]
+    environment:
+      TIGER_DATABASE_URL: postgres://postgres:grounded@db:5432/grounded
+      REDIS_URL: redis://redis:6379
+      PORT: "8000"
+    ports: ["8000:8000"]
+    depends_on: [db, redis]
+
+  worker:
+    build: .
+    command: arq grounded.job_queue.arq_worker.WorkerSettings
+    env_file: [.env]
+    environment:
+      TIGER_DATABASE_URL: postgres://postgres:grounded@db:5432/grounded
+      REDIS_URL: redis://redis:6379
+    depends_on: [db, redis]
+
+volumes:
+  pgdata:
