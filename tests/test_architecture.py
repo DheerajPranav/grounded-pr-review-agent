@@ -17,6 +17,8 @@ _RANK = {
     "tools": 2,
     "memory": 2,
     "security": 2,
+    "database": 2,
+    "data": 3,
     "agents": 3,
     "aggregation": 3,
     "economics": 3,

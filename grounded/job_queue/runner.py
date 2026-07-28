@@ -52,4 +52,8 @@ def run_review_job(payload: JobPayload, *, settings, github, events: EventLog | 
     # confident ones as the actual APPROVE / REQUEST_CHANGES.
     ApprovalQueue(events=events).submit(review)
     github.post_review(payload.repo_full_name, payload.pr_number, review)
+
+    # Durable persistence to the Tiger spine when configured (best-effort; degrades to no-op).
+    from grounded.data import persist_sync
+    persist_sync(settings, review, events, payload.repo_full_name, payload.pr_number)
     return review
